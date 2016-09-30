@@ -511,10 +511,10 @@ withStmt :
 ;
 
 // Special forms with special syntax, only available in a report.
-lineSpecialForm : expression whiteSpace (STEP whiteSpace?)? tuple MINUS (STEP whiteSpace?)? tuple whiteSpace? (COMMA whiteSpace? expression)? whiteSpace? (COMMA whiteSpace? lineSpecialFormOption)?;
-circleSpecialForm : (expression whiteSpace? DOT whiteSpace?)? CIRCLE whiteSpace (STEP whiteSpace?)? tuple (whiteSpace? COMMA whiteSpace? expression)+;
-scaleSpecialForm : (expression whiteSpace? DOT whiteSpace?)? SCALE whiteSpace tuple whiteSpace? MINUS whiteSpace? tuple;
-tuple : LPAREN whiteSpace? expression whiteSpace? COMMA whiteSpace? expression whiteSpace? RPAREN;
+lineSpecialForm : expression whiteSpace (STEP whiteSpace?)? ttuple MINUS (STEP whiteSpace?)? ttuple whiteSpace? (COMMA whiteSpace? expression)? whiteSpace? (COMMA whiteSpace? lineSpecialFormOption)?;
+circleSpecialForm : (expression whiteSpace? DOT whiteSpace?)? CIRCLE whiteSpace (STEP whiteSpace?)? ttuple (whiteSpace? COMMA whiteSpace? expression)+;
+scaleSpecialForm : (expression whiteSpace? DOT whiteSpace?)? SCALE whiteSpace ttuple whiteSpace? MINUS whiteSpace? ttuple;
+ttuple : LPAREN whiteSpace? expression whiteSpace? COMMA whiteSpace? expression whiteSpace? RPAREN;
 lineSpecialFormOption: (B_CHAR | BF);
 
 subscripts : subscript (whiteSpace? COMMA whiteSpace? subscript)*;
@@ -529,7 +529,7 @@ identifierValue : IDENTIFIER | keyword | foreignName;
 foreignName : L_SQUARE_BRACKET foreignIdentifier* R_SQUARE_BRACKET;
 foreignIdentifier : ~(L_SQUARE_BRACKET | R_SQUARE_BRACKET) | foreignName;
 
-asTypeClause : AS whiteSpace? (NEW whiteSpace)? type (whiteSpace? fieldLength)?;
+asTypeClause : AS whiteSpace? (NEW whiteSpace)? ttype (whiteSpace? fieldLength)?;
 
 baseType : BOOLEAN | BYTE | CURRENCY | DATE | DOUBLE | INTEGER | LONG | LONGLONG | LONGPTR | SINGLE | STRING | VARIANT | ANY;
 
@@ -554,7 +554,7 @@ lineNumberLabel : numberLiteral whiteSpace? COLON?;
 
 numberLiteral : HEXLITERAL | OCTLITERAL | FLOATLITERAL | INTEGERLITERAL;
 
-type : (baseType | complexType) (whiteSpace? LPAREN whiteSpace? RPAREN)?;
+ttype : (baseType | complexType) (whiteSpace? LPAREN whiteSpace? RPAREN)?;
 
 typeHint : PERCENT | AMPERSAND | POW | EXCLAMATIONPOINT | HASH | AT | DOLLAR;
 
