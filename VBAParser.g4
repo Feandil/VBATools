@@ -21,6 +21,15 @@ parser grammar VBAParser;
 
 options { tokenVocab = VBALexer; }
 
+startRuleSimple : moduleSimple EOF;
+
+moduleSimple :
+    endOfStatement
+    moduleAttributes
+    moduleDeclarations
+    moduleBody
+;
+
 startRule : module EOF;
 
 module :
