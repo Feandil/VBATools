@@ -2,6 +2,8 @@ VBALexer.py
 VBALexer.tokens
 VBAParser.py
 VBAParser.tokens
+__pycache__/
 *.pyc
+*.pyo
 *.doc
 *.docm
