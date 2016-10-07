@@ -28,6 +28,8 @@ class VBADeobsfuscator(object):
             return []
         if not path:
             return [node]
+        if not node.getChildCount():
+            return []
         name = path[0]
         path = path[1:]
         if name == '*':
