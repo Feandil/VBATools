@@ -1,0 +1,71 @@
+from oletools.olevba import VBA_Parser
+from subprocess import Popen, PIPE
+import inspect
+import os.path
+import json
+
+class Parser(object):
+
+    def _parse(self, data):
+        jars = ['VBA.jar','antlr4-4.5.3.jar','gson-2.7.jar']
+        jars = [os.path.join(self._path, 'parser', jar) for jar in jars]
+        proc = Popen(['java', '-cp', ':'.join(jars), 'VBA'], stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        (out, err) = proc.communicate(input=data)
+        if proc.returncode != 0:
+            return None
+        return json.loads(out)
+
+    @classmethod
+    def _get_text(cls, node):
+        ret = []
+        if node['name'] == 'EOF':
+            return ret
+        if 'value' in node:
+            ret.append(node['value'])
+        if 'children' in node:
+            for child in node['children']:
+                ret.extend(cls._get_text(child))
+        return ret
+
+    @classmethod
+    def xpath(cls, node, path):
+        if not path:
+            return [node]
+        if 'children' not in node:
+            return []
+        name, path = path[0], path[1:]
+        if name == '*':
+            return [elt for child in node['children'] for elt in cls.xpath(child, path)]
+        ret = []
+        for child in node['children']:
+            if child['name'] == name:
+                ret.extend(cls.xpath(child, path))
+        return ret
+
+    def __init__(self, file):
+        vbaparser = VBA_Parser(file)
+        self._raw = [code for (_f, _p, _name, code) in vbaparser.extract_macros()]
+        self._path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        contents = [self._parse(data) for data in self._raw]
+        self._content = contents
+        self.decl = {'name': 'moduleDeclarations', 'children': []}
+        self.body = {'name': 'moduleBody', 'children': []}
+        for content in contents:
+            decls = self.xpath(content, ['module', 'moduleDeclarations', '*'])
+            self.decl['children'].extend(decls)
+            bodys = self.xpath(content, ['module', 'moduleBody', '*'])
+            self.body['children'].extend(bodys)
+
+    def get_text(self):
+        decls = self._get_text(self.decl)
+        body = self._get_text(self.body)
+        return ''.join([''.join(decls), ''.join(body)])
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) != 2:
+        print('Expected 1 argument: file to analyse')
+        sys.exit(-1)
+    d = Parser(sys.argv[1])
+    print(d.get_text())
+
