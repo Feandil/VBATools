@@ -1,7 +1,7 @@
-VBALexer.java
-VBALexer.tokens
-VBAParser.java
-VBAParser.tokens
+vba.tokens
+vbaLexer.java
+vbaLexer.tokens
+vbaParser.java
 __pycache__/
 __class__/
 *.pyc

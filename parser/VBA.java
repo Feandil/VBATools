@@ -11,7 +11,7 @@ public class VBA implements ParseTreeVisitor<String> {
 	private String[] rules;
 	private Gson gson;
 
-	public VBA(VBAParser parser) {
+	public VBA(vbaParser parser) {
 		this.voc = parser.getVocabulary();
 		this.rules = parser.getRuleNames();
 		this.gson = new Gson();
@@ -65,15 +65,15 @@ public class VBA implements ParseTreeVisitor<String> {
 	}
 
 	public static void main( String[] args) throws Exception {
-		VBALexer lexer;
+		vbaLexer lexer;
 		if (args.length > 0) {
-			lexer = new VBALexer(new ANTLRFileStream(args[0]));
+			lexer = new vbaLexer(new ANTLRFileStream(args[0]));
 		} else {
-			lexer = new VBALexer(new ANTLRInputStream(new InputStreamReader(System.in)));
+			lexer = new vbaLexer(new ANTLRInputStream(new InputStreamReader(System.in)));
 		}
 		CommonTokenStream tokens = new CommonTokenStream( lexer );
-		VBAParser parser = new VBAParser( tokens );
-		ParseTree tree = parser.startRuleSimple();
+		vbaParser parser = new vbaParser( tokens );
+		ParseTree tree = parser.startRule();
                 System.out.println(new VBA(parser).visit(tree));
 	}
 }
