@@ -1,9 +1,12 @@
-VBALexer.py
+VBALexer.java
 VBALexer.tokens
-VBAParser.py
+VBAParser.java
 VBAParser.tokens
 __pycache__/
+__class__/
 *.pyc
 *.pyo
 *.doc
 *.docm
+*.jar
+*.class

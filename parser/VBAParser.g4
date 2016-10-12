@@ -299,8 +299,8 @@ singleLetter : unrestrictedIdentifier;
 // a module, even those with a first character that would otherwise fall outside this range if it was 
 // interpreted as a <letter-range> from A-Z.""
 universalLetterRange : upperCaseA whiteSpace? MINUS whiteSpace? upperCaseZ;
-upperCaseA : {_input.Lt(1).Text.Equals("A")}? unrestrictedIdentifier;
-upperCaseZ : {_input.Lt(1).Text.Equals("Z")}? unrestrictedIdentifier;
+upperCaseA : {_input.LT(1).getText().equals("A")}? unrestrictedIdentifier;
+upperCaseZ : {_input.LT(1).getText().equals("Z")}? unrestrictedIdentifier;
 letterRange : firstLetter whiteSpace? MINUS whiteSpace? lastLetter;
 firstLetter : unrestrictedIdentifier;
 lastLetter : unrestrictedIdentifier;
