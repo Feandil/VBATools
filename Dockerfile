@@ -4,8 +4,10 @@ MAINTAINER "CERN Computer Security Team <computer.security@cern.ch>"
 
 # Install dependencies
 RUN yum install -y java-1.8.0-openjdk-headless python-pip && \
-    yum clean all && \
-    pip install oletools
+    pip install oletools && \
+    yum -y erase python-pip && \
+    yum -y autoremove && \
+    yum clean all
 
 # Copy source code
 COPY . /malware
