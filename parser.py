@@ -63,7 +63,12 @@ class Parser(object):
             return cls.xpath(node, ['certainIdentifier', 'IDENTIFIER'])[0]['value']
         except IndexError:
             pass
-        return cls.xpath(node, ['ambiguousIdentifier', 'ambiguousKeyword', '*'])[0]['value']
+        try:
+            return cls.xpath(node, ['ambiguousIdentifier', 'ambiguousKeyword', '*'])[0]['value']
+        except IndexError:
+            pass
+        # Might be a "iCS_S_MembersCall", but we don't want those
+        return None
 
 
     def __init__(self, file):

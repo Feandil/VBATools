@@ -91,17 +91,18 @@ class Deobsfuscator(Parser):
         proc = self._proc[proc_name]
         for argument in self.xpath(proc,['argList', 'arg']):
             name = self.identifier_name(argument)
-            self.rename(name, proc)
+            if name:
+                self.rename(name, proc)
         for node_type in ['lineLabel', 'forEachStmt', 'forNextStmt']:
             for stmt in self.findall(proc, node_type):
                 name = self.identifier_name(stmt)
-                if name != proc_name and name not in self._identifier_order:
+                if name and name != proc_name and name not in self._identifier_order:
                     self.rename(name, proc)
         for node_type in ['setStmt', 'letStmt']:
             for setstmt in self.findall(proc, node_type):
                 var = self.xpath(setstmt, ['implicitCallStmt_InStmt', '*'])[0]
                 name = self.identifier_name(var)
-                if name != proc_name and name not in self._identifier_order:
+                if name and name != proc_name and name not in self._identifier_order:
                     self.rename(name, proc)
 
     def clean_ids(self):
