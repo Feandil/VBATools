@@ -80,10 +80,14 @@ class Parser(object):
             bodys = self.xpath(content, ['module', 'moduleBody', '*'])
             self.body['children'].extend(bodys)
 
-    def get_text(self):
-        decls = self._get_text(self.decl)
-        body = self._get_text(self.body)
-        return ''.join([''.join(decls), ''.join(body)])
+    def get_text(self, node=None):
+        if node is None:
+            decls = self._get_text(self.decl)
+            body = self._get_text(self.body)
+            return ''.join([''.join(decls), ''.join(body)])
+        else:
+            return ''.join(self._get_text(node))
+
 
 if __name__ == '__main__':
     import sys
