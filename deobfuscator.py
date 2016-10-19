@@ -2,7 +2,7 @@ import string
 
 from parser import Parser
 
-class Deobsfuscator(Parser):
+class Deobfuscator(Parser):
 
     def __init__(self, file):
         super(Deobsfuscator, self).__init__(file)
@@ -119,6 +119,6 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print('Expected 1 argument: file to analyse')
         sys.exit(-1)
-    d = Deobsfuscator(sys.argv[1])
+    d = Deobfuscator(sys.argv[1])
     d.clean_ids()
     print(d.get_text())
