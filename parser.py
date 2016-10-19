@@ -42,6 +42,30 @@ class Parser(object):
                 ret.extend(cls.xpath(child, path))
         return ret
 
+    @classmethod
+    def findall(cls, node, node_name):
+        ret = []
+        if node['name'] == node_name:
+            ret.append(node)
+        if 'children' not in node:
+            return ret
+        for child in node['children']:
+            ret.extend(cls.findall(child, node_name))
+        return ret
+
+    @classmethod
+    def identifier_name(cls, node):
+        try:
+            return cls.xpath(node, ['ambiguousIdentifier', 'IDENTIFIER'])[0]['value']
+        except IndexError:
+            pass
+        try:
+            return cls.xpath(node, ['certainIdentifier', 'IDENTIFIER'])[0]['value']
+        except IndexError:
+            pass
+        return cls.xpath(node, ['ambiguousIdentifier', 'ambiguousKeyword', '*'])[0]['value']
+
+
     def __init__(self, file):
         vbaparser = VBA_Parser(file)
         self._raw = [code for (_f, _p, _name, code) in vbaparser.extract_macros()]
