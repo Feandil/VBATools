@@ -71,8 +71,11 @@ class Parser(object):
         return None
 
 
-    def __init__(self, file):
-        vbaparser = VBA_Parser(file)
+    def __init__(self, file, data=None):
+        if data:
+            vbaparser = VBA_Parser(file, data=data)
+        else:
+            vbaparser = VBA_Parser(file)
         self._raw = [code for (_f, _p, _name, code) in vbaparser.extract_macros()]
         self._path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         contents = [self._parse(data) for data in self._raw]

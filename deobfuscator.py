@@ -4,8 +4,8 @@ from parser import Parser
 
 class Deobfuscator(Parser):
 
-    def __init__(self, file):
-        super(Deobsfuscator, self).__init__(file)
+    def __init__(self, file, data=None):
+        super(Deobfuscator, self).__init__(file, data=data)
         self._index = -1
         self._known_identifier = None
         self._identifier_order = []
