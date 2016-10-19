@@ -1,5 +1,13 @@
-build-image:
+build-cern:
   tags:
     - docker-image-build
   script: ""
+
+build-centos:
+  tags:
+    - docker-image-build
+  script: ""
+  variables:
+    FROM:    centos:latest
+    TO:      ${CI_REGISTRY_IMAGE}:centos
 
