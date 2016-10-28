@@ -85,6 +85,11 @@ class Deobfuscator(Parser):
         for identifier in self.findall(node, 'IDENTIFIER'):
             if identifier['value'] == oldname:
                 identifier['value'] = newname
+            else:
+                parts = identifier['value'].split('_')
+                if parts[0] == oldname:
+                    parts[0] = newname
+                    identifier['value'] = '_'.join(parts)
 
     def rename(self, oldname, node=None):
         newname = self._next_valid_name()
