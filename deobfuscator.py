@@ -93,6 +93,7 @@ class Deobfuscator(Parser):
             self._known_identifier.remove(oldname)
         else:
             self._rename(node, oldname, newname)
+        return newname
 
     def clean_proc_variables(self, proc_name):
         proc = self._proc[proc_name]
@@ -117,8 +118,12 @@ class Deobfuscator(Parser):
            if id in self._proc:
                self.clean_proc_variables(id)
         for id in self._identifier_order:
-           if id in d._deps:
-               self.rename(id)
+           if id in self._deps:
+               new_name = self.rename(id)
+               for dic in [self._proc, self._var]:
+                   if id in dic:
+                       dic[new_name] = dic[id]
+                       del dic[id]
 
 
 if __name__ == '__main__':
