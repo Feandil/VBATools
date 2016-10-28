@@ -95,6 +95,14 @@ class Parser(object):
         # Might be a "iCS_S_MembersCall", but we don't want those
         return None
 
+    @classmethod
+    def proc_arguments(cls, node):
+        ret = []
+        for argument in cls.xpath(node, ['argList', 'arg']):
+            name = cls.identifier_name(argument)
+            if name:
+                ret.append(name)
+        return ret
 
     def __init__(self, file, data=None):
         if data:

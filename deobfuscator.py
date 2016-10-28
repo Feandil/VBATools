@@ -115,10 +115,8 @@ class Deobfuscator(Parser):
 
     def clean_proc_variables(self, proc_name):
         proc = self._proc[proc_name]
-        for argument in self.xpath(proc,['argList', 'arg']):
-            name = self.identifier_name(argument)
-            if name:
-                self.rename(name, proc)
+        for argument in self.proc_arguments(proc):
+            self.rename(argument, proc)
         for node_type in ['lineLabel', 'forEachStmt', 'forNextStmt']:
             for stmt in self.findall(proc, node_type):
                 name = self.identifier_name(stmt)
