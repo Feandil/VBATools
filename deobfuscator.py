@@ -10,6 +10,7 @@ import string
 from parser import Parser
 
 class Deobfuscator(Parser):
+    BASE_ATTR = set(['VB_Base', 'VB_Creatable', 'VB_Customizable', 'VB_Exposed', 'VB_GlobalNameSpace', 'VB_Name', 'VB_PredeclaredId', 'VB_TemplateDerived'])
     ARITHM = set(['literal', 'valueStmt', 'SHORTLITERAL', 'WS', "'-'", "'+'", "'('", "')'"])
 
     def __init__(self, file, data=None):
@@ -151,6 +152,26 @@ class Deobfuscator(Parser):
             for ws in self.findall(node, 'WS'):
                 ws['value'] = ' '
 
+    def _useless_attr(self, attrst):
+        simple_attr = self.xpath(attrst, ['implicitCallStmt_InStmt', 'iCS_S_VariableOrProcedureCall'])
+        if not simple_attr:
+            return False
+        name = self.identifier_name(simple_attr[0])
+        if name in self.BASE_ATTR:
+            return True
+        else:
+            return False
+
+    def clean_attr(self):
+        self.attr['children'] = [attr for attr in self.attr['children'] if not self._useless_attr(attr)]
+        attrs = []
+        newline = True
+        for attr in self.attr['children']:
+            if newline and attr['name'] == 'endOfLine':
+                continue
+            attrs.append(attr)
+            newline = (attr['name'] == 'endOfLine')
+        self.attr['children'] = attrs
 
 if __name__ == '__main__':
     import sys
@@ -158,6 +179,7 @@ if __name__ == '__main__':
         print('Expected 1 argument: file to analyse')
         sys.exit(-1)
     d = Deobfuscator(sys.argv[1])
+    d.clean_attr()
     d.clean_ids()
     d.clean_arithmetic()
     d.clean_whitespaces()
