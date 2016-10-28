@@ -97,9 +97,12 @@ class Parser(object):
         self._path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         contents = [self._parse(data) for data in self._raw]
         self._content = contents
+        self.attr = {'name': 'moduleAttributes', 'children': []}
         self.decl = {'name': 'moduleDeclarations', 'children': []}
         self.body = {'name': 'moduleBody', 'children': []}
         for content in contents:
+            attrs = self.xpath(content, ['module', 'moduleAttributes', '*'])
+            self.attr['children'].extend(attrs)
             decls = self.xpath(content, ['module', 'moduleDeclarations', '*'])
             self.decl['children'].extend(decls)
             bodys = self.xpath(content, ['module', 'moduleBody', '*'])
@@ -107,9 +110,10 @@ class Parser(object):
 
     def get_text(self, node=None):
         if node is None:
+            attrs = self._get_text(self.attr)
             decls = self._get_text(self.decl)
             body = self._get_text(self.body)
-            return ''.join([''.join(decls), ''.join(body)])
+            return ''.join([''.join(attrs), ''.join(decls), ''.join(body)])
         else:
             return ''.join(self._get_text(node))
 

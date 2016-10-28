@@ -89,6 +89,7 @@ class Deobfuscator(Parser):
     def rename(self, oldname, node=None):
         newname = self._next_valid_name()
         if node is None:
+            self._rename(self.attr, oldname, newname)
             self._rename(self.decl, oldname, newname)
             self._rename(self.body, oldname, newname)
             self._known_identifier.remove(oldname)
