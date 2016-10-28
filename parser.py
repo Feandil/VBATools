@@ -61,6 +61,14 @@ class Parser(object):
         return ret
 
     @classmethod
+    def getallidentifiers(cls, node, acc=None):
+        if acc is None:
+            acc = set()
+        for identifier in cls.findall(node, 'IDENTIFIER'):
+            acc.add(identifier['value'])
+        return acc
+
+    @classmethod
     def getallclasses(cls, node, acc=None):
         if acc is None:
             acc = set()

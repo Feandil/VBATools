@@ -44,10 +44,8 @@ class Deobfuscator(Parser):
     def _populate_identifiers(self):
         if self._known_identifier is None:
             self._known_identifier = set()
-            for identifier in self.findall(self.decl, 'IDENTIFIER'):
-                self._known_identifier.add(identifier['value'])
-            for identifier in self.findall(self.body, 'IDENTIFIER'):
-                self._known_identifier.add(identifier['value'])
+            self.getallidentifiers(self.decl, acc=self._known_identifier)
+            self.getallidentifiers(self.body, acc=self._known_identifier)
 
     def _build_dependency_tree(self):
         self._deps = {}
