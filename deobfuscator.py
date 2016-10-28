@@ -140,6 +140,11 @@ class Deobfuscator(Parser):
                         continue
                     stmt['children'] = [{'name': 'literal', 'children': [{'name': 'SHORTLITERAL', 'value': str(val)}]}]
 
+    def clean_whitespaces(self):
+        for node in [self.attr, self.decl, self.body]:
+            for ws in self.findall(node, 'WS'):
+                ws['value'] = ' '
+
 
 if __name__ == '__main__':
     import sys
@@ -149,4 +154,5 @@ if __name__ == '__main__':
     d = Deobfuscator(sys.argv[1])
     d.clean_ids()
     d.clean_arithmetic()
+    d.clean_whitespaces()
     print(d.get_text())
