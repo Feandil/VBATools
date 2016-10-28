@@ -104,6 +104,28 @@ class Parser(object):
                 ret.append(name)
         return ret
 
+    @classmethod
+    def local_variables(cls, node):
+        ret = []
+        for stmt in cls.findall(node, 'variableStmt'):
+            for sub_stmt in cls.findall(stmt, 'variableSubStmt'):
+                name = cls.identifier_name(sub_stmt)
+                if name and name not in ret:
+                    ret.append(name)
+        for node_type in ['lineLabel', 'forEachStmt', 'forNextStmt']:
+            for stmt in cls.findall(node, node_type):
+                name = cls.identifier_name(stmt)
+                if name and name not in ret:
+                    ret.append(name)
+        for node_type in ['setStmt', 'letStmt']:
+            for setstmt in cls.findall(node, node_type):
+                var = cls.xpath(setstmt, ['implicitCallStmt_InStmt', '*'])[0]
+                name = cls.identifier_name(var)
+                if name and name not in ret:
+                    ret.append(name)
+        return ret
+
+
     def __init__(self, file, data=None):
         if data:
             vbaparser = VBA_Parser(file, data=data)

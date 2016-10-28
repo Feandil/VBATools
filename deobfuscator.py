@@ -113,26 +113,19 @@ class Deobfuscator(Parser):
             pass
         return newname
 
-    def clean_proc_variables(self, proc_name):
-        proc = self._proc[proc_name]
-        for argument in self.proc_arguments(proc):
-            self.rename(argument, proc)
-        for node_type in ['lineLabel', 'forEachStmt', 'forNextStmt']:
-            for stmt in self.findall(proc, node_type):
-                name = self.identifier_name(stmt)
-                if name and name != proc_name and name not in self._identifier_order:
-                    self.rename(name, proc)
-        for node_type in ['setStmt', 'letStmt']:
-            for setstmt in self.findall(proc, node_type):
-                var = self.xpath(setstmt, ['implicitCallStmt_InStmt', '*'])[0]
-                name = self.identifier_name(var)
-                if name and name != proc_name and name not in self._identifier_order:
-                    self.rename(name, proc)
-
     def clean_ids(self):
         for id in self._identifier_order:
-           if id in self._proc:
-               self.clean_proc_variables(id)
+            if id in self._proc:
+                proc = self._proc[id]
+                arguments = self.proc_arguments(proc)
+                variables = self.local_variables(proc)
+                for argument in arguments:
+                    self.rename(argument, proc)
+                for variable in variables:
+                    if (variable != id and
+                            variable not in arguments and
+                            variable not in self._identifier_order):
+                        self.rename(variable, proc)
         for id in self._identifier_order:
            if id in self._deps:
                new_name = self.rename(id)
