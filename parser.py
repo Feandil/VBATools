@@ -61,6 +61,16 @@ class Parser(object):
         return ret
 
     @classmethod
+    def getallclasses(cls, node, acc=None):
+        if acc is None:
+            acc = set()
+        acc.add(node['name'])
+        if 'children' in node:
+            for child in node['children']:
+                cls.getallclasses(child, acc=acc)
+        return acc
+
+    @classmethod
     def identifier_name(cls, node):
         try:
             return cls.xpath(node, ['ambiguousIdentifier', 'IDENTIFIER'])[0]['value']

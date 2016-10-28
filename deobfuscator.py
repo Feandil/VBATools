@@ -10,6 +10,7 @@ import string
 from parser import Parser
 
 class Deobfuscator(Parser):
+    ARITHM = set(['literal', 'valueStmt', 'SHORTLITERAL', 'WS', "'-'", "'+'", "'('", "')'"])
 
     def __init__(self, file, data=None):
         super(Deobfuscator, self).__init__(file, data=data)
@@ -125,6 +126,20 @@ class Deobfuscator(Parser):
                        dic[new_name] = dic[id]
                        del dic[id]
 
+    def clean_arithmetic(self):
+        for node in [self.attr, self.decl, self.body]:
+            valuestmts = self.findall(node, 'valueStmt')
+            for stmt in valuestmts:
+                classes = self.getallclasses(stmt)
+                if classes.issubset(self.ARITHM):
+                    val = None
+                    try:
+                        val = eval(self.get_text(stmt))
+                    except e:
+                        raise e
+                        continue
+                    stmt['children'] = [{'name': 'literal', 'children': [{'name': 'SHORTLITERAL', 'value': str(val)}]}]
+
 
 if __name__ == '__main__':
     import sys
@@ -133,4 +148,5 @@ if __name__ == '__main__':
         sys.exit(-1)
     d = Deobfuscator(sys.argv[1])
     d.clean_ids()
+    d.clean_arithmetic()
     print(d.get_text())
