@@ -82,25 +82,37 @@ class Deobfuscator(Parser):
         self._known_identifier.add(name)
         return name
 
-    def _rename(self, node, oldname, newname):
+    def _update_global_id(self, oldname, newname):
+        for dic in [self._proc, self._var]:
+            if oldname in dic:
+                dic[newname] = dic[oldname]
+                del dic[oldname]
+
+    def _rename(self, node, oldname, newname, update_global_id=False):
         for identifier in self.findall(node, 'IDENTIFIER'):
             if identifier['value'] == oldname:
                 identifier['value'] = newname
-            else:
+            elif update_global_id:
                 parts = identifier['value'].split('_')
                 if parts[0] == oldname:
                     parts[0] = newname
+                    self._known_identifier.remove(identifier['value'])
+                    self._update_global_id(identifier['value'], '_'.join(parts))
                     identifier['value'] = '_'.join(parts)
 
     def rename(self, oldname, node=None):
         newname = self._next_valid_name()
         if node is None:
-            self._rename(self.attr, oldname, newname)
-            self._rename(self.decl, oldname, newname)
-            self._rename(self.body, oldname, newname)
-            self._known_identifier.remove(oldname)
+            self._update_global_id(oldname, newname)
+            self._rename(self.attr, oldname, newname, update_global_id=True)
+            self._rename(self.decl, oldname, newname, update_global_id=True)
+            self._rename(self.body, oldname, newname, update_global_id=True)
         else:
             self._rename(node, oldname, newname)
+        try:
+            self._known_identifier.remove(oldname)
+        except:
+            pass
         return newname
 
     def clean_proc_variables(self, proc_name):
@@ -128,10 +140,6 @@ class Deobfuscator(Parser):
         for id in self._identifier_order:
            if id in self._deps:
                new_name = self.rename(id)
-               for dic in [self._proc, self._var]:
-                   if id in dic:
-                       dic[new_name] = dic[id]
-                       del dic[id]
 
     def clean_arithmetic(self):
         for node in [self.attr, self.decl, self.body]:
@@ -180,7 +188,7 @@ if __name__ == '__main__':
         sys.exit(-1)
     d = Deobfuscator(sys.argv[1])
     d.clean_attr()
-    d.clean_ids()
     d.clean_arithmetic()
     d.clean_whitespaces()
+    d.clean_ids()
     print(d.get_text())
