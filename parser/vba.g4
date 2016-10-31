@@ -102,8 +102,7 @@ module :
 	endOfLine*
 	(moduleHeader endOfLine*)?
 	moduleConfig? endOfLine*
-	moduleAttributes? endOfLine*
-	moduleDeclarations? endOfLine*
+	((moduleAttributes|moduleDeclarations) endOfLine*)*
 	moduleBody? endOfLine*
 	WS?
 ;
