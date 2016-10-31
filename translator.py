@@ -35,6 +35,9 @@ class Translator(object):
         self._parser = parser
         self._ident = 0
         self._name = None
+        self._expect_args = False
+        self._overriden_functions = set()
+        self._overriden_functions_array = set()
         self._code = ""
         self._ret = False
         self._failed = False
@@ -117,8 +120,12 @@ class Translator(object):
         self._name = name
         self._functions.add(name)
         arguments = self._parser.proc_arguments(node)
+        if arguments:
+            self._expect_args = True
         self._variables.update(arguments)
         self._add_line("def {0}({1}):".format(name, ', '.join(arguments)))
+        orig_code = self._code
+        self._code = ""
         with self:
             blocks = self._parser.xpath(node, ['block'])
             if not blocks:
@@ -128,6 +135,14 @@ class Translator(object):
                     self._handle(block)
                 if self._ret:
                     self._add_line('return {0}'.format(name))
+            proc_code = self._code
+            self._code = orig_code
+            for var in self._overriden_functions:
+                self._add_line('{0} = ""'.format(var))
+            for arr in self._overriden_functions_array:
+                self._add_line('{0} = []'.format(var))
+            self._code += proc_code
+
 
     _handle_subStmt = _handle_proc
     _handle_functionStmt = _handle_proc
@@ -153,6 +168,7 @@ class Translator(object):
             return
         self._add_line(' '.join([variable, operation, value]))
         if variable == self._name:
+            self._overriden_functions.add(variable)
             self._ret = True
 
     _handle_setStmt = _handle_letStmt
@@ -183,11 +199,19 @@ class Translator(object):
             self._functions.discard(name)
             self._variables.add(name)
             if arguments:
+                self._overriden_functions_array.add(name)
                 code = '{0}[{1}]'.format(name, arguments)
             else:
+                self._overriden_functions.add(name)
                 code = name
         elif name in self._functions:
-            code = '{0}({1})'.format(name, arguments)
+            if name == self._name and self._expect_args and not arguments:
+                self._functions.discard(name)
+                self._variables.add(name)
+                self._overriden_functions.add(name)
+                code = name
+            else:
+                code = '{0}({1})'.format(name, arguments)
         elif name in self._variables:
             if arguments:
                 code = '{0}[{1}]'.format(name, arguments)
