@@ -46,6 +46,16 @@ class Deobfuscator(Parser):
             self._proc[name] = funst
             self._identifier_order.append(name)
 
+    def _remove_proc(self, proc_name):
+        for subst in self.findall(self.body, 'subStmt'):
+            name = self.identifier_name(subst)
+            if name == proc_name:
+                subst['parent']['children'].remove(subst)
+        for funst in self.findall(self.body, 'functionStmt'):
+            name = self.identifier_name(funst)
+            if name == proc_name:
+                funst['parent']['children'].remove(funst)
+
     def _populate_identifiers(self):
         if self._known_identifier is None:
             self._known_identifier = set()
@@ -252,10 +262,19 @@ class Deobfuscator(Parser):
                     done = False
                     self._interpretor.add_fun(proc, code)
                     translated.add(proc)
-        for good in translated:
-            for proc in list(reverse_dep[good]):
-                if self._replace_call(good, self._proc[proc], translated):
-                    reverse_dep[good].remove(proc)
+                    if proc in reverse_dep:
+                        for caller in list(reverse_dep[proc]):
+                            if self._replace_call(proc, self._proc[caller], translated):
+                                reverse_dep[proc].remove(caller)
+        for proc in translated:
+            if proc in reverse_dep:
+                for caller in list(reverse_dep[proc]):
+                    if self._replace_call(proc, self._proc[caller], translated):
+                        reverse_dep[proc].remove(caller)
+        for proc in translated:
+            if proc in reverse_dep and len(reverse_dep[proc]) == 0:
+                del self._proc[proc]
+                self._remove_proc(proc)
 
 if __name__ == '__main__':
     import sys
