@@ -139,7 +139,11 @@ class Parser(object):
             vbaparser = VBA_Parser(file)
         self._raw = [code for (_f, _p, _name, code) in vbaparser.extract_macros()]
         self._path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        contents = [self._parse(data) for data in self._raw]
+        try:
+            contents = [self._parse(data) for data in self._raw]
+        except ValueError as e:
+            print('Unable to parse the VBA')
+            sys.exit(-1)
         self._content = contents
         self.attr = {'name': 'moduleAttributes', 'children': []}
         self.decl = {'name': 'moduleDeclarations', 'children': []}

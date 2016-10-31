@@ -61,11 +61,11 @@ class Translator(object):
     def _handle(self, node, ret=False, left=False):
         try:
             func = getattr(self, '_handle_{0}'.format(node['name']))
-            return func(node, ret=ret, left=left)
         except AttributeError:
             self._failed = True
             self.debug("Can't handle: " + node['name'])
-            #print(node)
+            return
+        return func(node, ret=ret, left=left)
 
     def __pass(self, node, ret=False, left=False):
         pass
