@@ -378,6 +378,55 @@ class Translator(object):
                 self.debug("variableSubStmt, can't handle {0}".format(child['name']))
                 self._failed = True
 
+    def _handle_doLoopStmt(self, node, ret=False, left=False):
+        if ret or left:
+            self._failed = True
+            return
+        dowhile = None
+        for child in node['children']:
+            if child['name'] in ['DO', 'WS', 'endOfStatement']:
+                pass
+            elif child['name'] in ['WHILE', 'UNTIL']:
+                dowhile = child['name']
+                break
+            elif child['name'] == 'block':
+                dowhile = True
+                break
+            else:
+                self.debug("doLoopStmt, can't handle {0} early".format(child['name']))
+                self._failed = True
+                return
+        if dowhile is None:
+            self.debug("doLoopStmt, nothing?")
+            self._failed = True
+            return
+        valueStmts = self._parser.xpath(node, ['valueStmt'])
+        if not valueStmts or len(valueStmts) != 1:
+            self.debug("doLoopStmt, bad valueStmt: {0}".format(valueStmts))
+            self._failed = True
+            return
+        condition = self._handle(valueStmts[0], ret=True)
+        if dowhile == 'UNTIL':
+            condition = 'not ({0})'.format(condition)
+        if self._failed:
+            return
+        if dowhile is False:
+            self._add_line('while True:')
+        else:
+            self._add_line('while ({0}):'.format(condition))
+        with self:
+            for block in self._parser.xpath(node, ['block']):
+                self._handle(block)
+            if self._failed:
+                return
+            if dowhile is False:
+                self._add_line('if({0}):'.format(condition))
+                with self:
+                    self._add_line('break')
+        if self._failed:
+            return
+
+
     def parsed(self):
         return not self._failed
 
