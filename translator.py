@@ -18,6 +18,7 @@ REPLACEMENTS = {
   "'+'": "+",
   "'-'": '-',
   "XOR": '^',
+  "'&'": '+',
 }
 
 FUN_REPLACEMENTS = {
