@@ -320,9 +320,9 @@ class Translator(object):
                 return
             args = arguments.split(',')
             if len(args) == 3:
-                code = '{0}[{1}:({1}+{2})]'.format(args[0], args[1], args[2])
+                code = '{0}[({1}-1):({1}-1+{2})]'.format(args[0], args[1] , args[2])
             elif len(args) == 2:
-                code = '{0}[{1}:]'.format(args[0], args[1])
+                code = '{0}[({1}-1):]'.format(args[0], args[1])
             else:
                 self._failed = True
                 return
