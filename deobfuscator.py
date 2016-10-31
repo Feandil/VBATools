@@ -5,25 +5,30 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+import re
 import string
 
 from parser import Parser
+from translator import PROC_OK, Translator
+from interpretor import Interpretor
 
 class Deobfuscator(Parser):
     BASE_ATTR = set(['VB_Base', 'VB_Creatable', 'VB_Customizable', 'VB_Exposed', 'VB_GlobalNameSpace', 'VB_Name', 'VB_PredeclaredId', 'VB_TemplateDerived'])
     ARITHM = set(['literal', 'valueStmt', 'SHORTLITERAL', 'WS', "'-'", "'+'", "'('", "')'"])
 
-    def __init__(self, file, data=None):
+    def __init__(self, file, data=None, debug=False):
         super(Deobfuscator, self).__init__(file, data=data)
         self._index = -1
         self._known_identifier = None
         self._identifier_order = []
-        self._deps = {}
+        self._resolvable = set()
+        self._resolved = set()
         self._var = {}
         self._proc = {}
         self._populate_vars()
         self._populate_proc()
-        self._build_dependency_tree()
+        self._interpretor = Interpretor()
+        self._debug = debug
 
     def _populate_vars(self):
         for varst in self.findall(self.decl, 'variableSubStmt'):
@@ -47,21 +52,32 @@ class Deobfuscator(Parser):
             self.getallidentifiers(self.decl, acc=self._known_identifier)
             self.getallidentifiers(self.body, acc=self._known_identifier)
 
-    def _build_dependency_tree(self):
-        self._deps = {}
+    def _proc_deps(self, proc_name):
+        proc = self._proc[proc_name]
+        ids = self.getallidentifiers(proc)
+        deps = set()
+        ids.discard(proc_name)
+        for lst in [self.proc_arguments(proc), self.local_variables(proc)]:
+            for id in lst:
+                ids.discard(id)
+        for lst in [self._var, self._proc]:
+            for id in lst:
+                if id in ids:
+                    deps.add(id)
+        return (ids, deps)
+
+    def _build_deps(self):
+        proc_dep = {}
+        reverse_dep = {}
         for proc in self._proc:
-            for proccall in self.findall(self._proc[proc], 'iCS_B_ProcedureCall'):
-                name = self.identifier_name(proccall)
+            (all_deps, proc_deps) = self._proc_deps(proc)
+            proc_dep[proc] = all_deps
+            for dep in proc_deps:
                 try:
-                    self._deps[name].add(proc)
+                    reverse_dep[dep].add(proc)
                 except KeyError:
-                    self._deps[name] = set([proc])
-            for procvar in self.findall(self._proc[proc], 'iCS_S_VariableOrProcedureCall'):
-                name = self.identifier_name(procvar)
-                try:
-                    self._deps[name].add(proc)
-                except KeyError:
-                    self._deps[name] = set([proc])
+                    reverse_dep[dep] = set([proc])
+        return (proc_dep, reverse_dep)
 
     def _next_name(self):
         self._index +=1
@@ -107,10 +123,7 @@ class Deobfuscator(Parser):
             self._rename(self.body, oldname, newname, update_global_id=True)
         else:
             self._rename(node, oldname, newname)
-        try:
-            self._known_identifier.remove(oldname)
-        except:
-            pass
+        self._known_identifier.discard(oldname)
         return newname
 
     def clean_ids(self):
@@ -126,8 +139,9 @@ class Deobfuscator(Parser):
                             variable not in arguments and
                             variable not in self._identifier_order):
                         self.rename(variable, proc)
+        (_, reverse_dep) = self._build_deps()
         for id in self._identifier_order:
-           if id in self._deps:
+           if id in reverse_dep:
                new_name = self.rename(id)
 
     def clean_arithmetic(self):
@@ -170,14 +184,91 @@ class Deobfuscator(Parser):
             newline = (attr['name'] == 'endOfLine')
         self.attr['children'] = attrs
 
+    def _replace_call(self, proc, node, known_functions):
+        replaced = True
+        for proccall in (self.findall(node, 'iCS_B_ProcedureCall') + self.findall(node, 'iCS_S_VariableOrProcedureCall')):
+            name = self.identifier_name(proccall)
+            if name == proc:
+                translator = Translator(self, proccall['parent'], known_functions=known_functions, debug=self._debug)
+                if not translator.parsed():
+                    replaced = False
+                    continue
+                try:
+                    value = str(self._interpretor.eval(str(translator), {}))
+                except Exception as e:
+                    if self._debug:
+                        print(e)
+                    replaced = False
+                    continue
+                if self._debug:
+                    print("Replacing:")
+                    print(self.get_text(proccall['parent']))
+                    print("With:")
+                    print(value)
+                    print("\n")
+                try:
+                    parent = proccall['parent']['parent']
+                except Exception as e:
+                    replaced = False
+                    if self._debug:
+                        print(e)
+                    continue
+                if parent['name'] != 'valueStmt':
+                    if self._debug:
+                        print("_replace_call, can't handle {0}".format(parent['name']))
+                    replaced = False
+                    continue
+                newval = { "name": "literal" }
+                if re.match(r'^[0-9]$', value):
+                    newval['children'] = [{ 'name': 'SHORTLITERAL', 'value': value }]
+                else:
+                    newval['children'] = [{ 'name': 'STRINGLITERAL', 'value': '"{0}"'.format(value) }]
+                parent['children'] = [newval]
+        return replaced
+
+    def clean_resolvable(self):
+        (proc_dep, reverse_dep) = self._build_deps()
+        done = False
+        non_translatable = set()
+        translated = set()
+        while not done:
+            done = True
+            good = set(list(PROC_OK) + list(non_translatable) + list(translated))
+            for proc in proc_dep:
+                if proc in non_translatable or proc in translated:
+                    continue
+                if proc_dep[proc].issubset(good):
+                    translator = Translator(self, self._proc[proc], known_functions=translated, debug=self._debug)
+                    if not translator.parsed():
+                        non_translatable.add(proc)
+                        continue
+                    code = str(translator)
+                    if self._debug:
+                        print("Replacing:")
+                        print(self.get_text(self._proc[proc]))
+                        print("With:")
+                        print(code)
+                        print("\n")
+                    done = False
+                    self._interpretor.add_fun(proc, code)
+                    translated.add(proc)
+        for good in translated:
+            for proc in list(reverse_dep[good]):
+                if self._replace_call(good, self._proc[proc], translated):
+                    reverse_dep[good].remove(proc)
+
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) != 2:
-        print('Expected 1 argument: file to analyse')
+    if len(sys.argv) != 2 and (len(sys.argv) != 3 or sys.argv[1] != '-d'):
+        print('Expected 1-2 argument: file to analyse or -d file to analyse')
         sys.exit(-1)
-    d = Deobfuscator(sys.argv[1])
+    if len(sys.argv) == 2:
+        d = Deobfuscator(sys.argv[1])
+    else:
+        d = Deobfuscator(sys.argv[2], debug=True)
     d.clean_attr()
     d.clean_arithmetic()
     d.clean_whitespaces()
     d.clean_ids()
+    d.clean_resolvable()
     print(d.get_text())

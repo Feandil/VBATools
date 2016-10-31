@@ -125,6 +125,12 @@ class Parser(object):
                     ret.append(name)
         return ret
 
+    def _double_link(self, node, parent=None):
+        if parent is not None:
+            node['parent'] = parent
+        if 'children' in node:
+            for child in node['children']:
+                self._double_link(child, node)
 
     def __init__(self, file, data=None):
         if data:
@@ -145,6 +151,9 @@ class Parser(object):
             self.decl['children'].extend(decls)
             bodys = self.xpath(content, ['module', 'moduleBody', '*'])
             self.body['children'].extend(bodys)
+        self._double_link(self.attr, None)
+        self._double_link(self.decl, None)
+        self._double_link(self.body, None)
 
     def get_text(self, node=None):
         if node is None:
@@ -155,6 +164,11 @@ class Parser(object):
         else:
             return ''.join(self._get_text(node))
 
+    def print_node(self, node, indent=0):
+        print('{0}{1}:{2}'.format(' '*indent, node['name'], node['value'] if 'value' in node else ""))
+        if 'children' in node:
+            for child in node['children']:
+                self.print_node(child, indent=(indent+2))
 
 if __name__ == '__main__':
     import sys
