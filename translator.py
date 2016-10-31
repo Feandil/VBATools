@@ -115,6 +115,87 @@ class Translator(object):
     _handle_TRUE = _handle_bool
     _handle_FALSE = _handle_bool
 
+    def _handle_argList(self, node, ret=False, left=False):
+        if left or not ret:
+            self._failed = True
+            return
+        args = []
+        for child in node['children']:
+            if child['name'] == 'arg':
+                args.append(self._handle(child, ret=True))
+            elif child['name'] in ['WS', "'('", "')'", "','"]:
+                pass
+            else:
+                self.debug("argList, can't handle {0}".format(child['name']))
+                self._failed = True
+        return args
+
+    def _handle_arg(self, node, ret=False, left=False):
+        if left or not ret:
+            self._failed = True
+            return
+        name = None
+        type = None
+        for child in node['children']:
+            if child['name'] == 'ambiguousIdentifier':
+                name = self._parser.identifier_name(node)
+            elif child['name'] in ['WS', "BYVAL", "BYREF", "typeHint", "'('", "')'"]:
+                pass
+            elif child['name'] == 'asTypeClause':
+                type = self._handle(child, ret=True)
+            else:
+                self.debug("argList, can't handle {0}".format(child['name']))
+                self._failed = True
+        if not name:
+            self._failed = True
+        return (name, type)
+
+    def _handle_asTypeClause(self, node, ret=False, left=False):
+        if left or not ret:
+            self._failed = True
+            return
+        type = None
+        for child in node['children']:
+            if child['name'] == 'type':
+                type = self._handle(child, ret=True)
+            elif child['name'] in ['AS', 'WS']:
+                pass
+            else:
+                self.debug("argList, can't handle {0}".format(child['name']))
+                self._failed = True
+        return type
+
+    def _handle_type(self, node, ret=False, left=False):
+        if left or not ret:
+            self._failed = True
+            return
+        type = None
+        for child in node['children']:
+            if child['name'] == 'baseType':
+                type = self._handle(child, ret=True)
+            elif child['name'] in ['WS', "'('", "')'"]:
+                pass
+            else:
+                self.debug("argList, can't handle {0}".format(child['name']))
+                self._failed = True
+        return type
+
+    def _handle_baseType(self, node, ret=False, left=False):
+        if left or not ret or len(node['children']) != 1:
+            self._failed = True
+            return
+        TYPES = {'BOOLEAN': 'bool({0})',
+                 'DOUBLE': 'float({0})',
+                 'INTEGER': 'int({0})',
+                 'LONG': 'long({0})',
+                 'STRING': 'str({0})',
+        }
+        try:
+            return TYPES[node['children'][0]['name']]
+        except KeyError:
+            self._failed = True
+            self.debug("baseType, can't handle {0}".format(node['children'][0]))
+
     def _handle_proc(self, node, ret=False, left=False):
         if self._parser.findall(node, 'PARAMARRAY'):
             self.debug("Procedure, can't handle PARAMARRAY")
@@ -123,14 +204,21 @@ class Translator(object):
         name = self._parser.identifier_name(node)
         self._name = name
         self._functions.add(name)
-        arguments = self._parser.proc_arguments(node)
+        raw_args = self._parser.xpath(node, ['argList'])
+        if raw_args:
+            arguments = self._handle(raw_args[0], ret=True)
+        else:
+            arguments = []
         if arguments:
             self._expect_args = True
-        self._variables.update(arguments)
-        self._add_line("def {0}({1}):".format(name, ', '.join(arguments)))
-        orig_code = self._code
-        self._code = ""
+        self._variables.update(x for (x,y) in arguments)
+        self._add_line("def {0}({1}):".format(name, ', '.join(x for (x,y) in arguments)))
         with self:
+            for (arg, type) in arguments:
+                if type:
+                    self._add_line('{0} = {1}'.format(arg, type.format(arg)))
+            orig_code = self._code
+            self._code = ""
             blocks = self._parser.xpath(node, ['block'])
             if not blocks:
                 self._add_line('pass')

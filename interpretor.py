@@ -21,6 +21,11 @@ class Interpretor(object):
                                             'set': __builtins__['set'],
                                             'chr': __builtins__['chr'],
                                             'len': __builtins__['len'],
+                                            'bool': __builtins__['bool'],
+                                            'float': __builtins__['float'],
+                                            'int': __builtins__['int'],
+                                            'long': __builtins__['long'],
+                                            'str': __builtins__['str'],
                         } }
         self.add_fun('object_call', OBJECT_CALL)
         self.add_fun('object_access', OBJECT_ACCESS)
