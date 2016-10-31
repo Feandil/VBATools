@@ -116,6 +116,10 @@ class Translator(object):
     _handle_FALSE = _handle_bool
 
     def _handle_proc(self, node, ret=False, left=False):
+        if self._parser.findall(node, 'PARAMARRAY'):
+            self.debug("Procedure, can't handle PARAMARRAY")
+            self._failed = True
+            return
         name = self._parser.identifier_name(node)
         self._name = name
         self._functions.add(name)
