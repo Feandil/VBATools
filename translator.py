@@ -255,6 +255,23 @@ class Translator(object):
             return
         return self.__handle_procedure_call(name, ', '.join(subscript), ret=ret, left=left)
 
+    def _handle_iCS_S_ProcedureOrArrayCall(self, node, ret=False, left=False):
+        name = None
+        subscript = []
+        for child in node['children']:
+            if child['name'] == 'ambiguousIdentifier':
+                name = self._parser.identifier_name(node)
+            elif child['name'] in ['subscripts', 'argsCall']:
+                subscript.append(self._handle(child, ret=True))
+            elif child['name'] in ["'('", "')'", 'WS']:
+                pass
+            else:
+                self.debug("iCS_S_ProcedureOrArrayCall, can't handle {0}".format(child['name']))
+                self._failed = True
+        if self._failed or not name:
+            return
+        return self.__handle_procedure_call(name, ', '.join(subscript), ret=ret, left=left)
+
     def _handle_whileWendStmt(self, node, ret=False, left=False):
         if ret or left:
             self._failed = True
