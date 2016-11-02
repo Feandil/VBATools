@@ -135,6 +135,8 @@ class Deobfuscator(Parser):
 
     def rename(self, oldname, node=None):
         newname = self._next_valid_name()
+        if self._debug:
+            print('Renaming {0} as {1}'.format(oldname, newname))
         if node is None:
             self._update_global_id(oldname, newname)
             self._rename(self.attr, oldname, newname, update_global_id=True)
