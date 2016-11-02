@@ -209,7 +209,7 @@ class Deobfuscator(Parser):
         if isinstance(value, int):
             return {"name": "literal", "children": [{ 'name': 'SHORTLITERAL', 'value': str(value)}]}
         elif isinstance(value, basestring):
-            return {"name": "literal", "children": [ { 'name': 'STRINGLITERAL', 'value': '"{0}"'.format(value)}]}
+            return {"name": "literal", "children": [ { 'name': 'STRINGLITERAL', 'value': '"{0}"'.format(value.replace('"', '""'))}]}
         elif isinstance(value, list):
             if len(value) > 0:
                 literal_list = [self.__format_value(val) for val in value]
