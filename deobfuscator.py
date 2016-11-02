@@ -30,6 +30,12 @@ class Deobfuscator(Parser):
         self._interpretor = Interpretor()
         self._debug = debug
 
+    def debug(self, lines, ident=0):
+        if self._debug:
+            for line in lines.splitlines():
+                print('{0}{1}'.format(' '*ident, line))
+
+
     def _populate_vars(self):
         for varst in self.findall(self.decl, 'variableSubStmt'):
             name = self.identifier_name(varst)
@@ -135,8 +141,7 @@ class Deobfuscator(Parser):
 
     def rename(self, oldname, node=None):
         newname = self._next_valid_name()
-        if self._debug:
-            print('Renaming {0} as {1}'.format(oldname, newname))
+        self.debug('Renaming {0} as {1}'.format(oldname, newname))
         if node is None:
             self._update_global_id(oldname, newname)
             self._rename(self.attr, oldname, newname, update_global_id=True)
@@ -242,8 +247,8 @@ class Deobfuscator(Parser):
                      )
                  }]
             }
-        elif self._debug:
-            print("__format_value, unsupported type {0}".format(type(value)))
+        else:
+            self.debug("__format_value, unsupported type {0}".format(type(value)))
         return None
 
 
@@ -259,33 +264,28 @@ class Deobfuscator(Parser):
                 try:
                     value = self._interpretor.eval(str(translator), {})
                 except Exception as e:
-                    if self._debug:
-                        print(str(translator))
-                        print(e)
+                    self.debug(str(e))
                     replaced = False
                     continue
                 try:
                     parent = proccall['parent']['parent']
                 except Exception as e:
                     replaced = False
-                    if self._debug:
-                        print(e)
+                    self.debug(str(e))
                     continue
                 if parent['name'] != 'valueStmt':
-                    if self._debug:
-                        print("_replace_call, can't handle {0}".format(parent['name']))
+                    self.debug("_replace_call, can't handle {0}".format(parent['name']))
                     replaced = False
                     continue
                 newval = self.__format_value(value)
                 if newval is None:
                     replaced = False
                     continue
-                if self._debug:
-                    print("Replacing:")
-                    print(self.get_text(parent['children'][0]))
-                    print("With:")
-                    print(str(value))
-                    print("\n")
+                self.debug("Replacing:")
+                self.debug(self.get_text(parent['children'][0]), ident=2)
+                self.debug("With:")
+                self.debug(str(value), ident=2)
+                self.debug("\n")
                 parent['children'] = [newval]
         return replaced
 
@@ -306,12 +306,11 @@ class Deobfuscator(Parser):
                         non_translatable.add(proc)
                         continue
                     code = str(translator)
-                    if self._debug:
-                        print("Emulating:")
-                        print(self.get_text(self._proc[proc]))
-                        print("With:")
-                        print(code)
-                        print("\n")
+                    self.debug("Emulating:")
+                    self.debug(self.get_text(self._proc[proc]), ident=2)
+                    self.debug("With:")
+                    self.debug(code, ident=2)
+                    self.debug("\n")
                     done = False
                     self._interpretor.add_fun(proc, code)
                     translated.add(proc)

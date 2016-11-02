@@ -49,7 +49,7 @@ class Translator(object):
 
     def debug(self, line):
         if self._debug:
-            print(line)
+            print('Translation error: {0}'.format(line))
 
     def _add_line(self, line):
         self._code += ' ' * self._ident
