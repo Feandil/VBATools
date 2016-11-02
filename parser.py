@@ -10,6 +10,7 @@ from subprocess import Popen, PIPE
 import inspect
 import os.path
 import json
+import sys
 
 class Parser(object):
 
@@ -175,7 +176,6 @@ class Parser(object):
                 self.print_node(child, indent=(indent+2))
 
 if __name__ == '__main__':
-    import sys
     if len(sys.argv) != 2:
         print('Expected 1 argument: file to analyse')
         sys.exit(-1)
