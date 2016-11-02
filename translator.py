@@ -204,7 +204,7 @@ class Translator(object):
             return TYPES[node['children'][0]['name']]
         except KeyError:
             self._failed = True
-            self.debug("baseType, can't handle {0}".format(node['children'][0]))
+            self.debug("baseType, can't handle {0}".format(node['children'][0]['name']))
 
     def _handle_proc(self, node, ret=False, left=False):
         name = self._parser.identifier_name(node)
