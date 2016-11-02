@@ -254,7 +254,7 @@ class Deobfuscator(Parser):
                         continue
                     code = str(translator)
                     if self._debug:
-                        print("Replacing:")
+                        print("Emulating:")
                         print(self.get_text(self._proc[proc]))
                         print("With:")
                         print(code)
