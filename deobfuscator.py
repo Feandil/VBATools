@@ -260,15 +260,10 @@ class Deobfuscator(Parser):
                     value = self._interpretor.eval(str(translator), {})
                 except Exception as e:
                     if self._debug:
+                        print(str(translator))
                         print(e)
                     replaced = False
                     continue
-                if self._debug:
-                    print("Replacing:")
-                    print(self.get_text(proccall['parent']))
-                    print("With:")
-                    print(str(value))
-                    print("\n")
                 try:
                     parent = proccall['parent']['parent']
                 except Exception as e:
@@ -285,6 +280,12 @@ class Deobfuscator(Parser):
                 if newval is None:
                     replaced = False
                     continue
+                if self._debug:
+                    print("Replacing:")
+                    print(self.get_text(parent['children'][0]))
+                    print("With:")
+                    print(str(value))
+                    print("\n")
                 parent['children'] = [newval]
         return replaced
 
