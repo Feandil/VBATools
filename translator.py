@@ -134,9 +134,10 @@ class Translator(object):
     def _handle_arg(self, node, ret=False, left=False):
         if left or not ret:
             self._failed = True
-            return
+            return (None, None)
         name = None
         type = None
+        paramarray = False
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
                 name = self._parser.identifier_name(node)
@@ -144,9 +145,17 @@ class Translator(object):
                 pass
             elif child['name'] == 'asTypeClause':
                 type = self._handle(child, ret=True)
+            elif child['name'] == 'PARAMARRAY':
+                paramarray = True
             else:
                 self.debug("argList, can't handle {0}".format(child['name']))
                 self._failed = True
+        if paramarray:
+            if type is not None:
+                self.debug("arg, PARAMARRAY can only be untyped or Varriant")
+                self._failed = True
+                return (None, None)
+            type = 'list(args)'
         if not name:
             self._failed = True
         return (name, type)
@@ -198,10 +207,6 @@ class Translator(object):
             self.debug("baseType, can't handle {0}".format(node['children'][0]))
 
     def _handle_proc(self, node, ret=False, left=False):
-        if self._parser.findall(node, 'PARAMARRAY'):
-            self.debug("Procedure, can't handle PARAMARRAY")
-            self._failed = True
-            return
         name = self._parser.identifier_name(node)
         self._name = name
         self._functions.add(name)
@@ -213,7 +218,15 @@ class Translator(object):
         if arguments:
             self._expect_args = True
         self._variables.update(x for (x,y) in arguments)
-        self._add_line("def {0}({1}):".format(name, ', '.join(x for (x,y) in arguments)))
+        types = [y for (x,y) in arguments]
+        if 'list(args)' in types:
+            if len(types) != 1:
+                self.debug("proc, we don't support more than 'PARAMARRAY'")
+                self._failed = True
+                return
+            self._add_line("def {0}(*args):".format(name))
+        else:
+            self._add_line("def {0}({1}):".format(name, ', '.join(x for (x,y) in arguments)))
         with self:
             for (arg, type) in arguments:
                 if type:

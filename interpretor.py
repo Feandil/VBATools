@@ -19,6 +19,7 @@ class Interpretor(object):
     def __init__(self):
         self._globals = { '__builtins__': {
                                             'set': __builtins__['set'],
+                                            'list': __builtins__['list'],
                                             'chr': __builtins__['chr'],
                                             'len': __builtins__['len'],
                                             'bool': __builtins__['bool'],

@@ -46,15 +46,24 @@ class Deobfuscator(Parser):
             self._proc[name] = funst
             self._identifier_order.append(name)
 
+    def __remove_proc(self, node):
+        moduleBodyElement = node['parent']
+        assert(len(moduleBodyElement['children']) == 1)
+        parent_children = moduleBodyElement['parent']['children']
+        index = parent_children.index(moduleBodyElement)
+        parent_children.pop(index)
+        if len(parent_children) > index and parent_children[index]['name'] == 'endOfLine':
+            parent_children.pop(index)
+
     def _remove_proc(self, proc_name):
         for subst in self.findall(self.body, 'subStmt'):
             name = self.identifier_name(subst)
             if name == proc_name:
-                subst['parent']['children'].remove(subst)
+                self.__remove_proc(subst)
         for funst in self.findall(self.body, 'functionStmt'):
             name = self.identifier_name(funst)
             if name == proc_name:
-                funst['parent']['children'].remove(funst)
+                self.__remove_proc(funst)
 
     def _populate_identifiers(self):
         if self._known_identifier is None:
