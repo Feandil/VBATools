@@ -203,6 +203,48 @@ class Deobfuscator(Parser):
             newline = (attr['name'] == 'endOfLine')
         self.attr['children'] = attrs
 
+    def __format_value(self, value):
+        if isinstance(value, int):
+            return {"name": "literal", "children": [{ 'name': 'SHORTLITERAL', 'value': str(value)}]}
+        elif isinstance(value, basestring):
+            return {"name": "literal", "children": [ { 'name': 'STRINGLITERAL', 'value': '"{0}"'.format(value)}]}
+        elif isinstance(value, list):
+            if len(value) > 0:
+                literal_list = [self.__format_value(val) for val in value]
+                valueStmt_list = [{"name": "valueStmt", "children": [literal]} for literal in literal_list]
+                subscript_list = [{"name": "subscript", "children": [subscript]} for subscript in valueStmt_list]
+                subscripts = [subscript_list[0]]
+                for subscript in subscript_list[1:]:
+                    subscripts.append({"name": "','","value": ","})
+                    subscripts.append({"name": "WS","value": " "})
+                    subscripts.append(subscript)
+                values = [{"name": "subscripts", "children": subscripts}]
+            else:
+                values = []
+            name = {
+                       "name": "ambiguousIdentifier",
+                       "children": [{
+                           "name": "IDENTIFIER",
+                            "value": "Array"
+                       }]
+                    }
+            return  {
+                 "name": "implicitCallStmt_InStmt",
+                 "children": [{
+                     "name": "iCS_S_VariableOrProcedureCall",
+                     "children": (
+                         [name] +
+                         [{"name": "'('", "value": "("}] +
+                         values +
+                         [{"name": "')'", "value": ")"}]
+                     )
+                 }]
+            }
+        elif self._debug:
+            print("__format_value, unsupported type {0}".format(type(value)))
+        return None
+
+
     def _replace_call(self, proc, node, known_functions):
         replaced = True
         for proccall in (self.findall(node, 'iCS_B_ProcedureCall') + self.findall(node, 'iCS_S_VariableOrProcedureCall')):
@@ -213,7 +255,7 @@ class Deobfuscator(Parser):
                     replaced = False
                     continue
                 try:
-                    value = str(self._interpretor.eval(str(translator), {}))
+                    value = self._interpretor.eval(str(translator), {})
                 except Exception as e:
                     if self._debug:
                         print(e)
@@ -223,7 +265,7 @@ class Deobfuscator(Parser):
                     print("Replacing:")
                     print(self.get_text(proccall['parent']))
                     print("With:")
-                    print(value)
+                    print(str(value))
                     print("\n")
                 try:
                     parent = proccall['parent']['parent']
@@ -237,11 +279,10 @@ class Deobfuscator(Parser):
                         print("_replace_call, can't handle {0}".format(parent['name']))
                     replaced = False
                     continue
-                newval = { "name": "literal" }
-                if re.match(r'^[0-9]$', value):
-                    newval['children'] = [{ 'name': 'SHORTLITERAL', 'value': value }]
-                else:
-                    newval['children'] = [{ 'name': 'STRINGLITERAL', 'value': '"{0}"'.format(value) }]
+                newval = self.__format_value(value)
+                if newval is None:
+                    replaced = False
+                    continue
                 parent['children'] = [newval]
         return replaced
 
