@@ -148,7 +148,7 @@ class Translator(object):
             elif child['name'] == 'PARAMARRAY':
                 paramarray = True
             else:
-                self.debug("argList, can't handle {0}".format(child['name']))
+                self.debug("arg, can't handle {0}".format(child['name']))
                 self._failed = True
         if paramarray:
             if type is not None:
@@ -171,7 +171,7 @@ class Translator(object):
             elif child['name'] in ['AS', 'WS']:
                 pass
             else:
-                self.debug("argList, can't handle {0}".format(child['name']))
+                self.debug("asTypeClause, can't handle {0}".format(child['name']))
                 self._failed = True
         return type
 
@@ -186,7 +186,7 @@ class Translator(object):
             elif child['name'] in ['WS', "'('", "')'"]:
                 pass
             else:
-                self.debug("argList, can't handle {0}".format(child['name']))
+                self.debug("type, can't handle {0}".format(child['name']))
                 self._failed = True
         return type
 
