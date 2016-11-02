@@ -323,10 +323,24 @@ class Deobfuscator(Parser):
                 for caller in list(reverse_dep[proc]):
                     if self._replace_call(proc, self._proc[caller], translated):
                         reverse_dep[proc].remove(caller)
-        for proc in translated:
-            if proc in reverse_dep and len(reverse_dep[proc]) == 0:
-                del self._proc[proc]
-                self._remove_proc(proc)
+        done = False
+        while not done:
+            done = True
+            for proc in translated:
+                if proc in reverse_dep:
+                    if len(reverse_dep[proc]) == 0:
+                        self.debug('Removing {0}: unused'.format(proc))
+                        del self._proc[proc]
+                        del reverse_dep[proc]
+                        self._remove_proc(proc)
+                        if proc in proc_dep:
+                            for called in proc_dep[proc]:
+                                if called in reverse_dep:
+                                    reverse_dep[called].discard(proc)
+                                    done = False
+                        del proc_dep[proc]
+                    else:
+                        self.debug('Not removing {0}, still used by ({1}): {2}'.format(proc, len(reverse_dep[proc]), ', '.join(reverse_dep[proc])))
 
 if __name__ == '__main__':
     import sys
