@@ -199,6 +199,7 @@ class Translator(object):
                  'INTEGER': 'int({0})',
                  'LONG': 'long({0})',
                  'STRING': 'str({0})',
+                 'VARIANT': '{0}',
         }
         try:
             return TYPES[node['children'][0]['name']]
