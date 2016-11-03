@@ -303,6 +303,7 @@ class Deobfuscator(Parser):
                 if proc_dep[proc].issubset(good):
                     translator = Translator(self, self._proc[proc], known_functions=translated, debug=self._debug)
                     if not translator.parsed():
+                        self.debug("Can't translate {0}".format(proc))
                         non_translatable.add(proc)
                         continue
                     code = str(translator)
