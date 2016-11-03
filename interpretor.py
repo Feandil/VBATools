@@ -11,6 +11,8 @@ class Interpretor(object):
                                             'int': __builtins__['int'],
                                             'long': __builtins__['long'],
                                             'str': __builtins__['str'],
+                                            'False': __builtins__['False'],
+                                            'True': __builtins__['True'],
                         } }
 
     def add_fun(self, name, code):

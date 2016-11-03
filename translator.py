@@ -111,7 +111,7 @@ class Translator(object):
         if left or not ret:
             self._failed = True
             return
-        return node['name'] == 'TRUE'
+        return str(node['name'] == 'TRUE')
 
     _handle_TRUE = _handle_bool
     _handle_FALSE = _handle_bool
