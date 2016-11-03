@@ -119,6 +119,9 @@ class Translator(object):
 
     @return_or_add
     def __return(self, node, ret=False, left=False):
+        if 'children' in node or 'value' not in node:
+            self._failed = True
+            return
         return node['value']
 
     _handle_HEXLITERAL = __return
@@ -248,6 +251,8 @@ class Translator(object):
             arguments = self._handle(raw_args[0], ret=True)
         else:
             arguments = []
+        if self._failed:
+            return
         if arguments:
             self._expect_args = True
         self._variables.update(x for (x,y) in arguments)
