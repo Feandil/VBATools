@@ -1,4 +1,5 @@
 from parser import Parser
+from functools import wraps
 
 IDENT = 2
 REPLACEMENTS = {
@@ -29,6 +30,27 @@ FUN_REPLACEMENTS = {
 
 PROC_OK = set(['Array', 'Mid'])
 PROC_OK.update(FUN_REPLACEMENTS)
+
+def return_only(func):
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        if kwargs['left'] or not kwargs['ret']:
+            self._failed = True
+            self.debug('Calling error')
+        else:
+            return func(self, *args, **kwargs)
+    return wrapped
+
+def return_or_add(func):
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        val = func(self, *args, **kwargs)
+        if self._failed:
+            return
+        if kwargs['ret']:
+            return val
+        self._add_line(val)
+    return wrapped
 
 class Translator(object):
 
@@ -95,10 +117,9 @@ class Translator(object):
     _handle_block = __run_all
     _handle_blockStmt = __run_all
 
+    @return_or_add
     def __return(self, node, ret=False, left=False):
-        if ret:
-            return node['value']
-        self._add_line(node['value'])
+        return node['value']
 
     _handle_HEXLITERAL = __return
     _handle_OCTLITERAL = __return
@@ -107,19 +128,15 @@ class Translator(object):
     _handle_SHORTLITERAL = __return
     _handle_STRINGLITERAL = __return
 
+    @return_only
     def _handle_bool(self, node, ret=False, left=False):
-        if left or not ret:
-            self._failed = True
-            return
         return str(node['name'] == 'TRUE')
 
     _handle_TRUE = _handle_bool
     _handle_FALSE = _handle_bool
 
+    @return_only
     def _handle_argList(self, node, ret=False, left=False):
-        if left or not ret:
-            self._failed = True
-            return
         args = []
         for child in node['children']:
             if child['name'] == 'arg':
@@ -131,10 +148,8 @@ class Translator(object):
                 self._failed = True
         return args
 
+    @return_only
     def _handle_arg(self, node, ret=False, left=False):
-        if left or not ret:
-            self._failed = True
-            return (None, None)
         name = None
         type = None
         paramarray = False
@@ -160,10 +175,8 @@ class Translator(object):
             self._failed = True
         return (name, type)
 
+    @return_only
     def _handle_asTypeClause(self, node, ret=False, left=False):
-        if left or not ret:
-            self._failed = True
-            return
         type = None
         for child in node['children']:
             if child['name'] == 'type':
@@ -175,10 +188,8 @@ class Translator(object):
                 self._failed = True
         return type
 
+    @return_only
     def _handle_type(self, node, ret=False, left=False):
-        if left or not ret:
-            self._failed = True
-            return
         type = None
         for child in node['children']:
             if child['name'] == 'baseType':
@@ -190,8 +201,9 @@ class Translator(object):
                 self._failed = True
         return type
 
+    @return_only
     def _handle_baseType(self, node, ret=False, left=False):
-        if left or not ret or len(node['children']) != 1:
+        if 'children' not in node or len(node['children']) != 1:
             self._failed = True
             return
         TYPES = {'BOOLEAN': 'bool({0})',
@@ -280,6 +292,7 @@ class Translator(object):
 
     _handle_setStmt = _handle_letStmt
 
+    @return_or_add
     def _handle_valueStmt(self, node, ret=False, left=False):
         values =  []
         for child in node['children']:
@@ -294,11 +307,9 @@ class Translator(object):
                 self._failed = True
         if self._failed:
             return
-        val = ''.join(values)
-        if ret:
-            return val
-        self._add_line(val)
+        return ''.join(values)
 
+    @return_or_add
     def __handle_procedure_call(self, name, arguments, ret=False, left=False):
         if name in FUN_REPLACEMENTS:
             code = FUN_REPLACEMENTS[name].format(arguments)
@@ -348,9 +359,7 @@ class Translator(object):
         else:
             self._failed = True
             return
-        if ret:
-            return code
-        self._add_line(code)
+        return code
 
     def _handle_iCS_S_VariableOrProcedureCall(self, node, ret=False, left=False):
         name = None
@@ -426,6 +435,7 @@ class Translator(object):
             for block in blocks:
                 self._handle(block)
 
+    @return_or_add
     def _handle_subscripts(self, node, ret=False, left=False):
         subs = []
         for child in node['children']:
@@ -440,10 +450,7 @@ class Translator(object):
                 self._failed = True
         if self._failed:
             return
-        val = ''.join(subs)
-        if ret:
-            return val
-        self._add_line(val)
+        return ''.join(subs)
 
     def _handle_subscript(self, node, ret=False, left=False):
         if len(node['children']) == 1:
@@ -451,6 +458,7 @@ class Translator(object):
         self.debug("subscript, can't handle 'TO': {0}".format(str(node)))
         self._failed = True
 
+    @return_or_add
     def _handle_argsCall(self, node, ret=False, left=False):
         args = []
         for child in node['children']:
@@ -463,11 +471,9 @@ class Translator(object):
                 self._failed = True
         if self._failed:
             return
-        val = ', '.join(args)
-        if ret:
-            return val
-        self._add_line(val)
+        return ', '.join(args)
 
+    @return_or_add
     def _handle_argCall(self, node, ret=False, left=False):
         val = None
         for child in node['children']:
@@ -484,9 +490,7 @@ class Translator(object):
         if self._failed or val is None:
             self._failed = True
             return
-        if ret:
-            return val
-        self._add_line(val)
+        return val
 
     def _handle_variableStmt(self, node, ret=False, left=False):
         if ret or left:
