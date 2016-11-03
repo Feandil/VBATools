@@ -127,6 +127,7 @@ class Translator(object):
     _handle_INTEGERLITERAL = __return
     _handle_SHORTLITERAL = __return
     _handle_STRINGLITERAL = __return
+    _handle_IDENTIFIER = __return
 
     @return_only
     def _handle_bool(self, node, ret=False, left=False):
@@ -155,7 +156,7 @@ class Translator(object):
         paramarray = False
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
-                name = self._parser.identifier_name(node)
+                name = self._handle(child, ret=True)
             elif child['name'] in ['WS', "BYVAL", "BYREF", "typeHint", "'('", "')'"]:
                 pass
             elif child['name'] == 'asTypeClause':
@@ -218,6 +219,25 @@ class Translator(object):
         except KeyError:
             self._failed = True
             self.debug("baseType, can't handle {0}".format(node['children'][0]['name']))
+
+    @return_or_add
+    def _handle_ambiguousKeyword(self, node, ret=False, left=False):
+        if 'children' not in node or len(node['children']) != 1:
+            self.debug('ambiguousKeyword: invalid number of children')
+            self._failed = True
+            return
+        return self.__return(node['children'][0], ret=ret, left=left)
+
+    @return_or_add
+    def __handle_identifier(self, node, ret=False, left=False):
+        if 'children' not in node or len(node['children']) != 1:
+            self.debug('identifier: non-supported number of children')
+            self._failed = True
+            return
+        return self._handle(node['children'][0], ret=ret, left=left)
+
+    _handle_certainIdentifier = __handle_identifier
+    _handle_ambiguousIdentifier = __handle_identifier
 
     def _handle_proc(self, node, ret=False, left=False):
         name = self._parser.identifier_name(node)
@@ -366,7 +386,7 @@ class Translator(object):
         subscript = ""
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
-                name = self._parser.identifier_name(node)
+                name = self._handle(child, ret=True)
             elif child['name'] == 'subscripts':
                 subscript = self._handle(child, ret=True)
             elif child['name'] in ["'('", "')'"]:
@@ -383,7 +403,7 @@ class Translator(object):
         subscript = []
         for child in node['children']:
             if child['name'] == 'certainIdentifier':
-                name = self._parser.identifier_name(node)
+                name = self._handle(child, ret=True)
             elif child['name'] in ['subscripts', 'argsCall']:
                 subscript.append(self._handle(child, ret=True))
             elif child['name'] in ["'('", "')'", 'WS']:
@@ -400,7 +420,7 @@ class Translator(object):
         subscript = []
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
-                name = self._parser.identifier_name(node)
+                name = self._handle(child, ret=True)
             elif child['name'] in ['subscripts', 'argsCall']:
                 subscript.append(self._handle(child, ret=True))
             elif child['name'] in ["'('", "')'", 'WS']:
@@ -505,7 +525,7 @@ class Translator(object):
             return
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
-                var = self._parser.identifier_name(node)
+                var = self._handle(child, ret=True)
                 self._variables.add(var)
             elif child['name'] in ['WS', "'('", "')'", 'typeHint', 'asTypeClause']:
                 pass
