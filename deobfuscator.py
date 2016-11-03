@@ -16,8 +16,8 @@ class Deobfuscator(Parser):
     BASE_ATTR = set(['VB_Base', 'VB_Creatable', 'VB_Customizable', 'VB_Exposed', 'VB_GlobalNameSpace', 'VB_Name', 'VB_PredeclaredId', 'VB_TemplateDerived'])
     ARITHM = set(['literal', 'valueStmt', 'SHORTLITERAL', 'WS', "'-'", "'+'", "'('", "')'"])
 
-    def __init__(self, file, data=None, debug=False):
-        super(Deobfuscator, self).__init__(file, data=data)
+    def __init__(self, data, debug=False):
+        super(Deobfuscator, self).__init__(data)
         self._index = -1
         self._known_identifier = None
         self._identifier_order = []
@@ -347,13 +347,17 @@ if __name__ == '__main__':
     if len(sys.argv) != 2 and (len(sys.argv) != 3 or sys.argv[1] != '-d'):
         print('Expected 1-2 argument: file to analyse or -d file to analyse')
         sys.exit(-1)
+    from extractor import Extractor
     if len(sys.argv) == 2:
-        d = Deobfuscator(sys.argv[1])
+        vbas = Extractor(sys.argv[1])
+        debug = False
     else:
-        d = Deobfuscator(sys.argv[2], debug=True)
-    d.clean_attr()
-    d.clean_arithmetic()
-    d.clean_whitespaces()
-    d.clean_ids()
-    d.clean_resolvable()
-    print(d.get_text())
+        vbas = Extractor(sys.argv[2])
+        debug = True
+    deob = Deobfuscator(vbas, debug=debug)
+    deob.clean_attr()
+    deob.clean_arithmetic()
+    deob.clean_whitespaces()
+    deob.clean_ids()
+    deob.clean_resolvable()
+    print(deob.get_text())

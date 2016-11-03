@@ -133,15 +133,10 @@ class Parser(object):
             for child in node['children']:
                 self._double_link(child, node)
 
-    def __init__(self, file, data=None):
-        if data:
-            vbaparser = VBA_Parser(file, data=data)
-        else:
-            vbaparser = VBA_Parser(file)
-        self._raw = [code for (_f, _p, _name, code) in vbaparser.extract_macros()]
+    def __init__(self, vbas):
         self._path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         try:
-            contents = [self._parse(data) for data in self._raw]
+            contents = [self._parse(data) for data in vbas]
         except ValueError as e:
             print('Unable to parse the VBA')
             print("The VBA doesn't match our grammar or your forgot to compile it (cd parser && make)")
@@ -180,6 +175,8 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print('Expected 1 argument: file to analyse')
         sys.exit(-1)
-    d = Parser(sys.argv[1])
-    print(d.get_text())
+    from extractor import Extractor
+    vbas = Extractor(sys.argv[1])
+    parser = Parser(vbas)
+    print(parser.get_text())
 
