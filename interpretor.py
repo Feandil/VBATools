@@ -1,19 +1,3 @@
-OBJECT_CALL = '''
-def object_call(x, y):
-  try:
-    return x(y)
-  except TypeError:
-    return x[y]
-'''
-
-OBJECT_ACCESS = '''
-def object_access(x):
-  try:
-    return x()
-  except TypeError:
-    return x
-'''
-
 class Interpretor(object):
 
     def __init__(self):
@@ -28,8 +12,6 @@ class Interpretor(object):
                                             'long': __builtins__['long'],
                                             'str': __builtins__['str'],
                         } }
-        self.add_fun('object_call', OBJECT_CALL)
-        self.add_fun('object_access', OBJECT_ACCESS)
 
     def add_fun(self, name, code):
         tmp_locals = {}
