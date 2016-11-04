@@ -33,12 +33,15 @@ REPLACEMENTS = {
 }
 
 FUN_REPLACEMENTS = {
-    "UBound": 'len({0}) - 1',
-    "Chr": 'chr({0})',
-    "Len": 'len({0})'
+    "UBound": [(1, 'len({0}) - 1')],
+    "Chr": [(1, 'chr({0})')],
+    "Len": [(1, 'len({0})')],
+    "Mid": [(3, '{0}[({1}-1):({1}-1+{2})]'), (2, '{0}[({1}-1):]')],
+    "Left": [(2, '{0}[:{1}]')],
+    "Right": [(2, '{0}[-{1}:]')],
 }
 
-PROC_OK = set(['Array', 'Mid'])
+PROC_OK = set(['Array'])
 PROC_OK.update(FUN_REPLACEMENTS)
 
 def return_only(func):
@@ -352,57 +355,54 @@ class Translator(object):
             return
         return ''.join(values)
 
+    def __validate_keywork(self, name):
+        if name in self._functions:
+            if name == self._name and self._expect_args:
+                self._functions.discard(name)
+                self._variables.add(name)
+                self._overriden_functions.add(name)
+                return name
+            return '{0}()'.format(name)
+        elif name in self._variables:
+            return name
+        else:
+            self.debug('Unknown keyword "{0}"'.format(name))
+            self._failed = True
+
     @return_or_block
     def __handle_procedure_call(self, name, arguments, ret=False, left=False):
-        if name in FUN_REPLACEMENTS:
-            code = FUN_REPLACEMENTS[name].format(arguments)
+        if name in FUN_REPLACEMENTS and arguments:
+            args = arguments.split(',')
+            for (length, format) in FUN_REPLACEMENTS[name]:
+                if len(args) == length:
+                    return format.format(*args)
+            self.debug('Wrong number of arguments for {0}: {1}'.format(name, len(args)))
+            self._failed = True
         elif left:
             self._functions.discard(name)
             self._variables.add(name)
             if arguments:
                 self._overriden_functions_array.add(name)
-                code = '{0}[{1}]'.format(name, arguments)
+                return '{0}[{1}]'.format(name, arguments)
             else:
                 self._overriden_functions.add(name)
-                code = name
-        elif name in self._functions:
-            if name == self._name and self._expect_args and not arguments:
-                self._functions.discard(name)
-                self._variables.add(name)
-                self._overriden_functions.add(name)
-                code = name
-            else:
-                code = '{0}({1})'.format(name, arguments)
-        elif name in self._variables:
-            if arguments:
-                code = '{0}[{1}]'.format(name, arguments)
-            else:
-                code = name
-        elif name == 'Array':
-            if left:
-                self._failed = True
-                return
-            code = '[{0}]'.format(arguments)
-        elif name == 'Mid':
-            if left:
-                self._failed = True
-                return
-            args = arguments.split(',')
-            if len(args) == 3:
-                code = '{0}[({1}-1):({1}-1+{2})]'.format(args[0], args[1], args[2])
-            elif len(args) == 2:
-                code = '{0}[({1}-1):]'.format(args[0], args[1])
-            else:
-                self._failed = True
-                return
+                return name
         elif arguments:
-            self.debug("Procedure_call: can't handle {0}".format(name))
-            self._failed = True
-            return
+            if name in self._variables:
+                return '{0}[{1}]'.format(name, arguments)
+            elif left:
+                self.debug('Function ({0}) cannot be used in a left statement'.format(name))
+                self._failed = True
+            elif name == 'Array':
+                return '[{0}]'.format(arguments)
+            elif name in self._functions:
+                return '{0}({1})'.format(name, arguments)
+            else:
+                self.debug("Procedure_call: can't handle {0}".format(name))
+                self._failed = True
+                return
         else:
-            self._failed = True
-            return
-        return code
+            return self.__validate_keywork(name)
 
     def _handle_iCS_S_VariableOrProcedureCall(self, node, ret=False, left=False):
         name = None
