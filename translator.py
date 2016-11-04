@@ -266,6 +266,7 @@ class Translator(object):
     _handle_certainIdentifier = __handle_identifier
     _handle_ambiguousIdentifier = __handle_identifier
 
+    @block_only
     def _handle_proc(self, node, ret=False, left=False):
         name = self._parser.identifier_name(node)
         self._name = name
@@ -369,7 +370,6 @@ class Translator(object):
             self.debug('Unknown keyword "{0}"'.format(name))
             self._failed = True
 
-    @return_or_block
     def __handle_procedure_call(self, name, arguments, ret=False, left=False):
         if name in FUN_REPLACEMENTS and arguments:
             args = arguments.split(',')
@@ -404,6 +404,7 @@ class Translator(object):
         else:
             return self.__validate_keywork(name)
 
+    @return_or_block
     def _handle_iCS_S_VariableOrProcedureCall(self, node, ret=False, left=False):
         name = None
         subscript = ""
@@ -421,6 +422,7 @@ class Translator(object):
             return
         return self.__handle_procedure_call(name, subscript, ret=ret, left=left)
 
+    @return_or_block
     def _handle_iCS_B_ProcedureCall(self, node, ret=False, left=False):
         name = None
         subscript = []
@@ -438,6 +440,7 @@ class Translator(object):
             return
         return self.__handle_procedure_call(name, ', '.join(subscript), ret=ret, left=left)
 
+    @return_or_block
     def _handle_iCS_S_ProcedureOrArrayCall(self, node, ret=False, left=False):
         name = None
         subscript = []
@@ -493,6 +496,7 @@ class Translator(object):
             return
         return ''.join(subs)
 
+    @return_only
     def _handle_subscript(self, node, ret=False, left=False):
         if len(node['children']) == 1:
             return self._handle(node['children'][0], ret=ret, left=left)
