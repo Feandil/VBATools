@@ -7,6 +7,7 @@
 
 from __future__ import print_function
 
+import copy
 import re
 import string
 
@@ -295,6 +296,28 @@ class Deobfuscator(Parser):
                 parent['children'] = [newval]
         return replaced
 
+    def _clean_up_function(self, touched, proc_dep, reverse_dep):
+        done = False
+        while not done:
+            done = True
+            removed = set()
+            for proc in touched:
+                if proc in reverse_dep:
+                    if len(reverse_dep[proc]) == 0:
+                        self.debug('Removing {0}: unused'.format(proc))
+                        del self._proc[proc]
+                        if proc in reverse_dep:
+                            del reverse_dep[proc]
+                        self._remove_proc(proc)
+                        if proc in proc_dep:
+                            for called in proc_dep[proc]:
+                                if called in reverse_dep:
+                                    reverse_dep[called].discard(proc)
+                                    done = False
+                        del proc_dep[proc]
+                    else:
+                        self.debug('Not removing {0}, still used by ({1}): {2}'.format(proc, len(reverse_dep[proc]), ', '.join(reverse_dep[proc])))
+
     def clean_resolvable(self):
         (proc_dep, reverse_dep) = self._build_deps()
         done = False
@@ -330,24 +353,67 @@ class Deobfuscator(Parser):
                 for caller in list(reverse_dep[proc]):
                     if self._replace_call(proc, self._proc[caller], translated):
                         reverse_dep[proc].remove(caller)
-        done = False
-        while not done:
-            done = True
-            for proc in translated:
-                if proc in reverse_dep:
-                    if len(reverse_dep[proc]) == 0:
-                        self.debug('Removing {0}: unused'.format(proc))
-                        del self._proc[proc]
-                        del reverse_dep[proc]
-                        self._remove_proc(proc)
-                        if proc in proc_dep:
-                            for called in proc_dep[proc]:
-                                if called in reverse_dep:
-                                    reverse_dep[called].discard(proc)
-                                    done = False
-                        del proc_dep[proc]
-                    else:
-                        self.debug('Not removing {0}, still used by ({1}): {2}'.format(proc, len(reverse_dep[proc]), ', '.join(reverse_dep[proc])))
+        self._clean_up_function(translated, proc_dep, reverse_dep)
+        self.debug('Unsolved dependencies:')
+        for proc in proc_dep:
+            if proc not in translated:
+                self.debug('{0}: {1}'.format(proc, sorted(proc_dep[proc])))
+
+    def _inline_function(self, proc_name, block, target_name):
+        proc = self._proc[proc_name]
+        if self.proc_arguments(proc):
+            self.debug('Cannot inline {0} in {1}: arguments required'.format(proc_name, target_name))
+            return False
+        proc_block = self.xpath(proc, ['block'])
+        if len(proc_block) != 1:
+            self.debug('Cannot inline {0} in {1}: invalid function (more than one block)'.format(proc_name, target_name))
+            return False
+        proc_blocks = proc_block[0]['children']
+        while proc_blocks[-1]['name'] == 'endOfStatement':
+            proc_blocks.pop()
+        self.debug('Inlining {0} in {1}'.format(proc_name, target_name))
+        parent = block['parent']
+        del block['parent']
+        index = parent['children'].index(block)
+        new_children = copy.deepcopy(proc_blocks)
+        for child in new_children:
+            child['parent'] = parent
+        parent['children'] = parent['children'][:index] + new_children + parent['children'][(index + 1):]
+        return True
+
+    def _is_simple_callout(self, node):
+        while node['name'] != 'IDENTIFIER':
+            if 'children' not in node or len(node['children']) != 1:
+                return False
+            node = node['children'][0]
+        return node['value']
+
+    def inline_functions(self):
+        (proc_dep, reverse_dep) = self._build_deps()
+        work_deps = copy.deepcopy(proc_dep)
+        for caller in work_deps:
+            work_deps[caller] = [callee for callee in work_deps[caller] if callee in self._proc]
+        todo = list(self._proc)
+        inlined = set()
+        while todo:
+            for proc in list(todo):
+                if proc not in work_deps or not work_deps[proc]:
+                    blocks = self.findall(self._proc[proc], 'blockStmt')
+                    for block in blocks:
+                        callout = self._is_simple_callout(block)
+                        if (not callout) or callout not in self._proc:
+                            continue
+                        if self._inline_function(callout, block, proc):
+                            inlined.add(callout)
+                    todo.remove(proc)
+                    if proc in reverse_dep:
+                        for caller in reverse_dep[proc]:
+                            work_deps[caller].remove(proc)
+        (_, new_reverse_dep) = self._build_deps()
+        for proc in reverse_dep:
+            if proc not in new_reverse_dep:
+                reverse_dep[proc] = set([])
+        self._clean_up_function(inlined, proc_dep, reverse_dep)
 
 if __name__ == '__main__':
     import sys
@@ -367,4 +433,5 @@ if __name__ == '__main__':
     deob.clean_whitespaces()
     deob.clean_ids()
     deob.clean_resolvable()
+    deob.inline_functions()
     print(deob.get_text())
