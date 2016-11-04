@@ -58,6 +58,7 @@ class Deobfuscator(Parser):
         moduleBodyElement = node['parent']
         assert(len(moduleBodyElement['children']) == 1)
         parent_children = moduleBodyElement['parent']['children']
+        del moduleBodyElement['parent']
         index = parent_children.index(moduleBodyElement)
         parent_children.pop(index)
         if len(parent_children) > index and parent_children[index]['name'] == 'endOfLine':
