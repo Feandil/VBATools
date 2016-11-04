@@ -1,31 +1,41 @@
-from parser import Parser
+# Copyright (C) 2016, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+from __future__ import print_function
+
 from functools import wraps
+
+from parser import Parser
 
 IDENT = 2
 REPLACEMENTS = {
-  "'('": '(',
-  "')'": ')',
-  "','": ',',
-  "'>='": '>=',
-  "'>'": '>',
-  "'<='": '<=',
-  "'<'": '<',
-  "'<>'": '!=',
-  "'='": '==',
-  "DIV": "/",
-  "'/'": "/",
-  "'*'": "*",
-  "MOD": "%",
-  "'+'": "+",
-  "'-'": '-',
-  "XOR": '^',
-  "'&'": '+',
+    "'('": '(',
+    "')'": ')',
+    "','": ',',
+    "'>='": '>=',
+    "'>'": '>',
+    "'<='": '<=',
+    "'<'": '<',
+    "'<>'": '!=',
+    "'='": '==',
+    "DIV": "/",
+    "'/'": "/",
+    "'*'": "*",
+    "MOD": "%",
+    "'+'": "+",
+    "'-'": '-',
+    "XOR": '^',
+    "'&'": '+',
 }
 
 FUN_REPLACEMENTS = {
-  "UBound": 'len({0}) - 1',
-  "Chr": 'chr({0})',
-  "Len": 'len({0})'
+    "UBound": 'len({0}) - 1',
+    "Chr": 'chr({0})',
+    "Len": 'len({0})'
 }
 
 PROC_OK = set(['Array', 'Mid'])
@@ -81,7 +91,7 @@ class Translator(object):
     def __enter__(self):
         self._ident += IDENT
 
-    def __exit__(self,_ex_type, _ex_value, _tb):
+    def __exit__(self, _ex_type, _ex_value, _tb):
         self._ident -= IDENT
 
     def _handle(self, node, ret=False, left=False):
@@ -255,8 +265,8 @@ class Translator(object):
             return
         if arguments:
             self._expect_args = True
-        self._variables.update(x for (x,y) in arguments)
-        types = [y for (x,y) in arguments]
+        self._variables.update(x for (x, y) in arguments)
+        types = [y for (x, y) in arguments]
         if 'list(args)' in types:
             if len(types) != 1:
                 self.debug("proc, we don't support more than 'PARAMARRAY'")
@@ -264,7 +274,7 @@ class Translator(object):
                 return
             self._add_line("def {0}(*args):".format(name))
         else:
-            self._add_line("def {0}({1}):".format(name, ', '.join(x for (x,y) in arguments)))
+            self._add_line("def {0}({1}):".format(name, ', '.join(x for (x, y) in arguments)))
         with self:
             for (arg, type) in arguments:
                 if type:
@@ -319,7 +329,7 @@ class Translator(object):
 
     @return_or_add
     def _handle_valueStmt(self, node, ret=False, left=False):
-        values =  []
+        values = []
         for child in node['children']:
             if child['name'] in ['valueStmt', 'literal', 'implicitCallStmt_InStmt']:
                 values.append(self._handle(child, ret=True, left=left))
@@ -371,7 +381,7 @@ class Translator(object):
                 return
             args = arguments.split(',')
             if len(args) == 3:
-                code = '{0}[({1}-1):({1}-1+{2})]'.format(args[0], args[1] , args[2])
+                code = '{0}[({1}-1):({1}-1+{2})]'.format(args[0], args[1], args[2])
             elif len(args) == 2:
                 code = '{0}[({1}-1):]'.format(args[0], args[1])
             else:
@@ -591,4 +601,4 @@ class Translator(object):
         return not self._failed
 
     def __str__(self):
-        return(self._code)
+        return self._code

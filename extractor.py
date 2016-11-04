@@ -5,8 +5,11 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from oletools.olevba import VBA_Parser
+from __future__ import print_function
+
 from collections import Sequence
+
+from oletools.olevba import VBA_Parser
 
 class Extractor(Sequence):
 

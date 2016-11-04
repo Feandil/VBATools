@@ -5,6 +5,8 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+from __future__ import print_function
+
 import re
 import string
 
@@ -167,8 +169,8 @@ class Deobfuscator(Parser):
                         self.rename(variable, proc)
         (_, reverse_dep) = self._build_deps()
         for id in self._identifier_order:
-           if id in reverse_dep:
-               new_name = self.rename(id)
+            if id in reverse_dep:
+                new_name = self.rename(id)
 
     def clean_arithmetic(self):
         for node in [self.attr, self.decl, self.body]:
@@ -179,9 +181,8 @@ class Deobfuscator(Parser):
                     val = None
                     try:
                         val = eval(self.get_text(stmt))
-                    except e:
-                        raise e
-                        continue
+                    except:
+                        raise
                     stmt['children'] = [{'name': 'literal', 'children': [{'name': 'SHORTLITERAL', 'value': str(val)}]}]
 
     def clean_whitespaces(self):

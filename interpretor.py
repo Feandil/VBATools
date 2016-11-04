@@ -20,5 +20,5 @@ class Interpretor(object):
         exec(code, self._globals, tmp_locals)
         self._globals[name] = tmp_locals[name]
 
-    def eval(self, code, locals):
-        return eval(code, self._globals, locals)
+    def eval(self, code, known_locals):
+        return eval(code, self._globals, known_locals)

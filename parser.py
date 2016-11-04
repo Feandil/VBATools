@@ -5,19 +5,23 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-from oletools.olevba import VBA_Parser
-from subprocess import Popen, PIPE
+from __future__ import print_function
+
 import inspect
-import os.path
 import json
+import os.path
+from subprocess import Popen, PIPE
 import sys
+
+from oletools.olevba import VBA_Parser
 
 class Parser(object):
 
     def _parse(self, data):
-        jars = ['VBA.jar','antlr4-4.5.3.jar','gson-2.7.jar']
+        jars = ['VBA.jar', 'antlr4-4.5.3.jar', 'gson-2.7.jar']
         jars = [os.path.join(self._path, 'parser', jar) for jar in jars]
-        proc = Popen(['java', '-cp', ':'.join(jars), 'VBA'], stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        proc = Popen(['java', '-cp', ':'.join(jars), 'VBA'], stdin=PIPE, stdout=PIPE, stderr=PIPE,
+                     universal_newlines=True)
         (out, err) = proc.communicate(input=data)
         if proc.returncode != 0:
             return None
@@ -176,7 +180,7 @@ if __name__ == '__main__':
         print('Expected 1 argument: file to analyse')
         sys.exit(-1)
     from extractor import Extractor
-    vbas = Extractor(sys.argv[1])
-    parser = Parser(vbas)
-    print(parser.get_text())
+    VBAS = Extractor(sys.argv[1])
+    PARSER = Parser(VBAS)
+    print(PARSER.get_text())
 
