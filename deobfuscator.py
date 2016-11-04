@@ -100,7 +100,7 @@ class Deobfuscator(Parser):
         reverse_dep = {}
         for proc in self._proc:
             (all_deps, proc_deps) = self._proc_deps(proc)
-            proc_dep[proc] = all_deps
+            proc_dep[proc] = set(all_deps)
             for dep in proc_deps:
                 try:
                     reverse_dep[dep].add(proc)
