@@ -61,7 +61,7 @@ def return_or_block(func):
         val = func(self, *args, **kwargs)
         if self._failed:
             return
-        if kwargs['ret']:
+        if 'ret' in kwargs and kwargs['ret']:
             return val
         self._add_line(val)
     return wrapped
