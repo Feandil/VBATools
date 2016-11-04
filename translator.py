@@ -44,14 +44,15 @@ PROC_OK.update(FUN_REPLACEMENTS)
 def return_only(func):
     @wraps(func)
     def wrapped(self, *args, **kwargs):
-        if kwargs['left'] or not kwargs['ret']:
+        if (('left' in kwargs and kwargs ['left']) or
+                ('ret' not in kwargs and not kwargs['ret'])):
             self._failed = True
-            self.debug('Calling error')
+            self.debug('Calling error (return_only: {0} {1}'.format(str(kwargs['left']), str(kwargs['ret'])))
         else:
             return func(self, *args, **kwargs)
     return wrapped
 
-def return_or_add(func):
+def return_or_block(func):
     @wraps(func)
     def wrapped(self, *args, **kwargs):
         val = func(self, *args, **kwargs)
@@ -61,6 +62,18 @@ def return_or_add(func):
             return val
         self._add_line(val)
     return wrapped
+
+def block_only(func):
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        if (('left' in kwargs and kwargs ['left']) or
+                ('ret' in kwargs and kwargs['ret'])):
+            self._failed = True
+            self.debug('Calling error (block_only: {0} {1}'.format(str(kwargs['left']), str(kwargs['ret'])))
+        else:
+            func(self, *args, **kwargs)
+    return wrapped
+
 
 class Translator(object):
 
@@ -116,18 +129,16 @@ class Translator(object):
     _handle_literal = __pass_through
     _handle_implicitCallStmt_InBlock = __pass_through
 
+    @block_only
     def __run_all(self, node, ret=False, left=False):
         if 'children' in node:
             for child in node['children']:
-                if ret or left:
-                    self._failed = True
-                    return
                 self._handle(child)
 
     _handle_block = __run_all
     _handle_blockStmt = __run_all
 
-    @return_or_add
+    @return_or_block
     def __return(self, node, ret=False, left=False):
         if 'children' in node or 'value' not in node:
             self._failed = True
@@ -233,7 +244,7 @@ class Translator(object):
             self._failed = True
             self.debug("baseType, can't handle {0}".format(node['children'][0]['name']))
 
-    @return_or_add
+    @return_or_block
     def _handle_ambiguousKeyword(self, node, ret=False, left=False):
         if 'children' not in node or len(node['children']) != 1:
             self.debug('ambiguousKeyword: invalid number of children')
@@ -241,7 +252,7 @@ class Translator(object):
             return
         return self.__return(node['children'][0], ret=ret, left=left)
 
-    @return_or_add
+    @return_or_block
     def __handle_identifier(self, node, ret=False, left=False):
         if 'children' not in node or len(node['children']) != 1:
             self.debug('identifier: non-supported number of children')
@@ -297,14 +308,11 @@ class Translator(object):
                 self._add_line('{0} = []'.format(var))
             self._code += proc_code
 
-
     _handle_subStmt = _handle_proc
     _handle_functionStmt = _handle_proc
 
+    @block_only
     def _handle_letStmt(self, node, ret=False, left=False):
-        if ret or left:
-            self._failed = True
-            return
         variable = value = operation = None
         for child in node['children']:
             if child['name'] == 'implicitCallStmt_InStmt':
@@ -327,7 +335,7 @@ class Translator(object):
 
     _handle_setStmt = _handle_letStmt
 
-    @return_or_add
+    @return_or_block
     def _handle_valueStmt(self, node, ret=False, left=False):
         values = []
         for child in node['children']:
@@ -344,7 +352,7 @@ class Translator(object):
             return
         return ''.join(values)
 
-    @return_or_add
+    @return_or_block
     def __handle_procedure_call(self, name, arguments, ret=False, left=False):
         if name in FUN_REPLACEMENTS:
             code = FUN_REPLACEMENTS[name].format(arguments)
@@ -447,10 +455,8 @@ class Translator(object):
             return
         return self.__handle_procedure_call(name, ', '.join(subscript), ret=ret, left=left)
 
+    @block_only
     def _handle_whileWendStmt(self, node, ret=False, left=False):
-        if ret or left:
-            self._failed = True
-            return
         loop = 'True'
         blocks = []
         for child in node['children']:
@@ -470,7 +476,7 @@ class Translator(object):
             for block in blocks:
                 self._handle(block)
 
-    @return_or_add
+    @return_or_block
     def _handle_subscripts(self, node, ret=False, left=False):
         subs = []
         for child in node['children']:
@@ -493,7 +499,7 @@ class Translator(object):
         self.debug("subscript, can't handle 'TO': {0}".format(str(node)))
         self._failed = True
 
-    @return_or_add
+    @return_or_block
     def _handle_argsCall(self, node, ret=False, left=False):
         args = []
         for child in node['children']:
@@ -508,7 +514,7 @@ class Translator(object):
             return
         return ', '.join(args)
 
-    @return_or_add
+    @return_or_block
     def _handle_argCall(self, node, ret=False, left=False):
         val = None
         for child in node['children']:
@@ -527,17 +533,13 @@ class Translator(object):
             return
         return val
 
+    @block_only
     def _handle_variableStmt(self, node, ret=False, left=False):
-        if ret or left:
-            self._failed = True
-            return
         for child in self._parser.xpath(node, ['variableListStmt', 'variableSubStmt']):
             self._handle(child, ret=False, left=False)
 
+    @block_only
     def _handle_variableSubStmt(self, node, ret=False, left=False):
-        if ret or left:
-            self._failed = True
-            return
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
                 var = self._handle(child, ret=True)
@@ -548,10 +550,8 @@ class Translator(object):
                 self.debug("variableSubStmt, can't handle {0}".format(child['name']))
                 self._failed = True
 
+    @block_only
     def _handle_doLoopStmt(self, node, ret=False, left=False):
-        if ret or left:
-            self._failed = True
-            return
         dowhile = None
         for child in node['children']:
             if child['name'] in ['DO', 'WS', 'endOfStatement']:
