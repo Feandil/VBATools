@@ -41,8 +41,11 @@ FUN_REPLACEMENTS = {
     "Right": [(2, '{0}[-{1}:]')],
 }
 
+KEYWORDS_OK = ['Err', 'Source', 'Number', 'Raise']
+
 PROC_OK = set(['Array'])
 PROC_OK.update(FUN_REPLACEMENTS)
+PROC_OK.update(KEYWORDS_OK)
 
 def return_only(func):
     @wraps(func)
@@ -110,23 +113,23 @@ class Translator(object):
     def __exit__(self, _ex_type, _ex_value, _tb):
         self._ident -= IDENT
 
-    def _handle(self, node, ret=False, left=False):
+    def _handle(self, node, **kwargs):
         try:
             func = getattr(self, '_handle_{0}'.format(node['name']))
         except AttributeError:
             self._failed = True
             self.debug("Can't handle: " + node['name'])
             return
-        return func(node, ret=ret, left=left)
+        return func(node, **kwargs)
 
     def __pass(self, node, ret=False, left=False):
         pass
 
     _handle_endOfStatement = __pass
 
-    def __pass_through(self, node, ret=False, left=False):
+    def __pass_through(self, node, **kwargs):
         assert(len(node['children']) == 1)
-        return self._handle(node['children'][0], ret=ret, left=left)
+        return self._handle(node['children'][0], **kwargs)
 
     _handle_implicitCallStmt_InStmt = __pass_through
     _handle_literal = __pass_through
@@ -366,11 +369,19 @@ class Translator(object):
             return '{0}()'.format(name)
         elif name in self._variables:
             return name
+        elif name in KEYWORDS_OK:
+            return "'{0}'".format(name)
         else:
             self.debug('Unknown keyword "{0}"'.format(name))
             self._failed = True
 
-    def __handle_procedure_call(self, name, arguments, ret=False, left=False):
+    def __handle_procedure_call(self, name, arguments, ret=False, left=False, raw=False):
+        if self._failed or not name:
+            self._failed = True
+            return (None, None)
+        arguments = ', '.join(arguments)
+        if raw:
+            return (name, arguments)
         if name in FUN_REPLACEMENTS and arguments:
             args = arguments.split(',')
             for (length, format) in FUN_REPLACEMENTS[name]:
@@ -405,7 +416,7 @@ class Translator(object):
             return self.__validate_keywork(name)
 
     @return_or_block
-    def _handle_iCS_S_VariableOrProcedureCall(self, node, ret=False, left=False):
+    def _handle_iCS_S_VariableOrProcedureCall(self, node, ret=False, left=False, raw=False):
         name = None
         subscript = ""
         for child in node['children']:
@@ -418,12 +429,10 @@ class Translator(object):
             else:
                 self.debug("iCS_S_VariableOrProcedureCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        if self._failed or not name:
-            return
-        return self.__handle_procedure_call(name, subscript, ret=ret, left=left)
+        return self.__handle_procedure_call(name, [subscript], ret=ret, left=left, raw=raw)
 
     @return_or_block
-    def _handle_iCS_B_ProcedureCall(self, node, ret=False, left=False):
+    def _handle_iCS_B_ProcedureCall(self, node, ret=False, left=False, raw=False):
         name = None
         subscript = []
         for child in node['children']:
@@ -436,12 +445,10 @@ class Translator(object):
             else:
                 self.debug("iCS_S_VariableOrProcedureCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        if self._failed or not name:
-            return
-        return self.__handle_procedure_call(name, ', '.join(subscript), ret=ret, left=left)
+        return self.__handle_procedure_call(name, subscript, ret=ret, left=left, raw=raw)
 
     @return_or_block
-    def _handle_iCS_S_ProcedureOrArrayCall(self, node, ret=False, left=False):
+    def _handle_iCS_S_ProcedureOrArrayCall(self, node, ret=False, left=False, raw=False):
         name = None
         subscript = []
         for child in node['children']:
@@ -454,9 +461,90 @@ class Translator(object):
             else:
                 self.debug("iCS_S_ProcedureOrArrayCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        if self._failed or not name:
-            return
-        return self.__handle_procedure_call(name, ', '.join(subscript), ret=ret, left=left)
+        return self.__handle_procedure_call(name, subscript, ret=ret, left=left, raw=raw)
+
+    @return_only
+    def _handle_iCS_S_MemberCall(self, node, ret=False, left=False, raw=False):
+        res = (None, None)
+        for child in node['children']:
+            if child['name'] in ['iCS_S_VariableOrProcedureCall', 'iCS_S_ProcedureOrArrayCall']:
+                res = self._handle(child, ret=True, left=left, raw=True)
+            elif child['name'] == "'.'":
+                pass
+            else:
+                self.debug("iCS_S_MemberCall, can't handle {0}".format(child['name']))
+                self._failed = True
+        if res is None or res[0] is None:
+            self._failed = True
+            return (None, None)
+        return res
+
+    def __handle_membercall(self, name, member, arguments):
+        if not name:
+             self.debug("iCS_S_MembersCall, empty name".format(name))
+             self._failed = True
+             return
+        name = self.__validate_keywork(name)
+        if not member:
+             self.debug("iCS_S_MembersCall, empty member".format(member))
+             self._failed = True
+             return
+        member = self.__validate_keywork(member)
+        if self._failed:
+             return
+        if arguments:
+            return "method_call({0}, {1}, [{2}])".format(name, member, arguments)
+        else:
+            return "method_call({0}, {1}, [])".format(name, member)
+
+    @return_or_block
+    def _handle_iCS_S_MembersCall(self, node, ret=False, left=False):
+        name = None
+        member = None
+        arguments = None
+        for child in node['children']:
+            if child['name'] in ['iCS_S_VariableOrProcedureCall', 'iCS_S_ProcedureOrArrayCall']:
+                if name:
+                    self.debug("iCS_S_MembersCall, dupplicate name")
+                    self._failed = True
+                    return
+                (name, empty) = self._handle(child, ret=True, left=left, raw=True)
+                if empty:
+                    self.debug("iCS_S_MembersCall, arguments present for name: {0}".format(empty))
+            elif child['name'] == 'iCS_S_MemberCall':
+                if member:
+                    self.debug("iCS_S_MembersCall, dupplicate member")
+                    self._failed = True
+                    return
+                (member, arguments) = self._handle(child, ret=True, left=left, raw=True)
+            elif child['name'] == 'subscripts':
+                if arguments:
+                    self.debug("iCS_S_MembersCall, dupplicate member")
+                    self._failed = True
+                    return
+                arguments = self._handle(child, ret=True)
+            elif child['name'] in ["'('", "')'", 'WS']:
+                pass
+            else:
+                self.debug("iCS_S_MembersCall, can't handle {0}".format(child['name']))
+                self._failed = True
+        return self.__handle_membercall(name, member, arguments)
+
+    @return_or_block
+    def _handle_iCS_B_MemberProcedureCall(self, node, ret=False, left=False):
+        name = None
+        member = None
+        arguments = []
+        for child in node['children']:
+            if child['name'] == 'implicitCallStmt_InStmt':
+                (name, empty) = self._handle(child, ret=True, left=left, raw=True)
+                if empty:
+                    self.debug("iCS_B_MemberProcedureCall, arguments present for name: {0}".format(empty))
+            elif child['name'] == 'ambiguousIdentifier':
+                member = self._handle(child, ret=True, left=left)
+            elif child['name'] in ['subscripts', 'argsCall']:
+                arguments.append(self._handle(child, ret=True))
+        return self.__handle_membercall(name, member, ', '.join(arguments))
 
     @block_only
     def _handle_whileWendStmt(self, node, ret=False, left=False):
@@ -600,6 +688,16 @@ class Translator(object):
         if self._failed:
             return
 
+    @block_only
+    def _handle_onErrorStmt(self, node, ret=False, left=False):
+        for child in node['children']:
+            if child['name'] in ['ON_ERROR', 'WS', 'RESUME', 'NEXT']:
+                pass
+            else:
+                self.debug("onErrorStmt, can't handle {0}".format(child['name']))
+                self._failed = True
+        if not self._failed:
+            self._add_line('disable_errors()')
 
     def parsed(self):
         return not self._failed

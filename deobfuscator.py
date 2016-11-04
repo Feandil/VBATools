@@ -264,6 +264,10 @@ class Deobfuscator(Parser):
                     continue
                 try:
                     value = self._interpretor.eval(str(translator), {})
+                except NotImplementedError as e:
+                    self.debug(str(e))
+                    replaced = False
+                    continue
                 except Exception as e:
                     self.debug(str(e))
                     replaced = False

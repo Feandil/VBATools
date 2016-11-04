@@ -141,6 +141,7 @@ moduleDeclarationsElement :
 	| moduleOption
 	| typeStmt
 	| macroStmt
+        | onErrorStmt
 ;
 
 macroStmt :
