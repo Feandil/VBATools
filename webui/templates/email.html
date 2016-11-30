@@ -1,0 +1,60 @@
+<html>
+<head>
+<style>
+dl {
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0
+}
+dt {
+  float: left;
+  width: 30%;
+  padding: 0;
+  margin: 0
+}
+dd {
+  float: left;
+  width: 70%;
+  padding: 0;
+  margin: 0
+}
+</style>
+</head>
+<body>
+{% if data_list %}
+<ul>
+{% for email in data_list %}
+<li><a href="{{ email.id }}">{{ email.id }}</a>: {% for sample in email.samples %}<a href="../samples/{{ sample.id }}">{{ sample.id }}[{{ sample.md5 }}]</a>{% if sample.decoded %}(<a href="../decoded/{{ sample.decoded }}">{{ sample.decoded }}</a>{% if sample.deobfuscated %} - <a href="../deobfuscated/{{ sample.deobfuscated }}">{{ sample.deobfuscated }}</a>{% endif %}){% endif %} {% endfor %}</li>
+
+{% endfor %}
+</ul>
+{% else %}
+<p>
+ <dl>
+  <dt>date</dt>
+  <dd>{{ date }}</dd>
+  <dt>sender</dt>
+  <dd>{{ sender }}</dd>
+  <dt>messageid</dt>
+  <dd>{{ messageid }}</dd>
+  <dt>subject</dt>
+  <dd>{{ subject }}</dd>
+  <dt>returnpath</dt>
+  <dd>{{ returnpath }}</dd>
+  <dt>useragent</dt>
+  <dd>{{ useragent }}</dd>
+  <dt>recipients</dt>
+  <dd>{% for recipient in recipients %}{{ recipient }} {% endfor %}</dd>
+  <dt>samples</dt>
+  <dd>{% for sample in samples %}<a href="../../samples/{{ sample.id }}">{{ sample.id }}</a> {% endfor %}</dd>
+ </dl>
+</p>
+{% for part in raw %}
+<p>
+{{ part.content | linebreaks }}
+</p>
+{% endfor %}
+{% endif %}
+</body>
+</html>

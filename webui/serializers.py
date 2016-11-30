@@ -34,4 +34,4 @@ class EmailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Email
-        fields = ('date', 'sender', 'messageid', 'subject', 'returnpath', 'useragent', 'recipients', 'samples')
+        fields = ('id', 'date', 'sender', 'messageid', 'subject', 'returnpath', 'useragent', 'recipients', 'samples')

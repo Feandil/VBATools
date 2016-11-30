@@ -5,6 +5,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, TemplateHTMLRenderer
 
 from .form import EmailUploadForm, SampleUploadForm
 from .models import Email, Sample, DecodedVBA, DeobfuscatedVBA
@@ -43,21 +44,36 @@ class SampleUploadView(FormView):
         else:
             return self.form_invalid(form)
 
+class ListTemplateHTMLRenderer(TemplateHTMLRenderer):
+    def get_template_context(self, data, renderer_context):
+        ret = super(ListTemplateHTMLRenderer, self).get_template_context(data, renderer_context)
+        if isinstance(ret, list):
+            return {'data_list': ret}
+        return ret
+
 class EmailViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Email.objects.all()
     serializer_class = EmailSerializer
+    renderer_classes = [JSONRenderer, ListTemplateHTMLRenderer, BrowsableAPIRenderer]
+    template_name = 'email.html'
 
 class SampleViewSet(viewsets.ModelViewSet):
     queryset = Sample.objects.all()
     serializer_class = SampleSerializer
+    renderer_classes = [JSONRenderer, ListTemplateHTMLRenderer, BrowsableAPIRenderer]
+    template_name = 'sample.html'
 
 class DecodedViewSet(viewsets.ModelViewSet):
     queryset = DecodedVBA.objects.all()
     serializer_class = DecodedVBASerializer
+    renderer_classes = [JSONRenderer, ListTemplateHTMLRenderer, BrowsableAPIRenderer]
+    template_name = 'decoded.html'
 
 class DeobfuscatedViewSet(viewsets.ModelViewSet):
     queryset = DeobfuscatedVBA.objects.all()
     serializer_class = DeobfuscatedVBASerializer
+    renderer_classes = [JSONRenderer, ListTemplateHTMLRenderer, BrowsableAPIRenderer]
+    template_name = 'decoded.html'
 
 @api_view(['GET'])
 def api_root(request, format=None):

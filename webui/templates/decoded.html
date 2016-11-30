@@ -1,0 +1,50 @@
+<html>
+<head>
+<style>
+dl {
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0
+}
+dt {
+  float: left;
+  width: 30%;
+  padding: 0;
+  margin: 0
+}
+dd {
+  float: left;
+  width: 70%;
+  padding: 0;
+  margin: 0
+}
+</style>
+</head>
+<body>
+{% if data_list %}
+<ul>
+{% for sample in data_list %}
+<li><a href="{{ sample.id }}">{{ sample.id }}</a></li>
+{% endfor %}
+</ul>
+{% else %}
+<p>
+ <dl>
+  <dt>size</dt>
+  <dd>{{ size }}</dd>
+  <dt>md5</dt>
+  <dd>{{ md5 }}</dd>
+  <dt>sha1</dt>
+  <dd>{{ sha1 }}</dd>
+  <dt>sha256</dt>
+  <dd>{{ sha256 }}</dd>
+ </dl>
+</p>
+<p>
+{{ content | linebreaks }}
+</p>
+{% endif %}
+</body>
+</html>
+

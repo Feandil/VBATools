@@ -1,0 +1,59 @@
+<html>
+<head>
+<style>
+dl {
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0
+}
+dt {
+  float: left;
+  width: 30%;
+  padding: 0;
+  margin: 0
+}
+dd {
+  float: left;
+  width: 70%;
+  padding: 0;
+  margin: 0
+}
+</style>
+</head>
+<body>
+{% if data_list %}
+<ul>
+{% for sample in data_list %}
+<li><a href="{{ sample.id }}">{{ sample.id }}</a>{% if sample.decoded %}(<a href="../decoded/{{ sample.decoded }}">{{ sample.decoded }}</a>{% if sample.deobfuscated %} - <a href="../deobfuscated/{{ sample.deobfuscated }}">{{ sample.deobfuscated }}</a>{% endif %}){% endif %}</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>
+ <dl>
+  <dt>size</dt>
+  <dd>{{ size }}</dd>
+  <dt>md5</dt>
+  <dd>{{ md5 }}</dd>
+  <dt>sha1</dt>
+  <dd>{{ sha1 }}</dd>
+  <dt>sha256</dt>
+  <dd>{{ sha256 }}</dd>
+{% if decoded %}
+  <dt>decoded</dt>
+  <dd><a href="../../decoded/{{ decoded }}">{{ decoded }}</a></dd>
+{% if deobfuscated %}
+  <dt>deobfuscated</dt>
+  <dd><a href="../../deobfuscated/{{ deobfuscated }}">{{ deobfuscated }}</a></dd>
+{% endif %}
+{% endif %}
+ </dl>
+</p>
+{% for part in raw %}
+<p>
+{{ part.content | linebreaks }}
+</p>
+{% endfor %}
+{% endif %}
+</body>
+</html>
