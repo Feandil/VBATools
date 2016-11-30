@@ -144,7 +144,7 @@ class Parser(object):
         except ValueError as e:
             print('Unable to parse the VBA')
             print("The VBA doesn't match our grammar or your forgot to compile it (cd parser && make)")
-            sys.exit(-1)
+            raise RuntimeError('Unable to parse the VBA')
         self._content = contents
         self.attr = {'name': 'moduleAttributes', 'children': []}
         self.decl = {'name': 'moduleDeclarations', 'children': []}
