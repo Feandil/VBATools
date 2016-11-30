@@ -1,0 +1,9 @@
+{% if ids %}
+Successfully imported {{ ids | length }} {{ name }}:
+{% for id in ids %}
+<p><a href="../api/{{ name }}/{{ id }}">{{ id }}</a></p>
+{% endfor %}
+{% else %}
+No {{ name }}imported
+{% endif %}
+
