@@ -353,11 +353,19 @@ class Translator(object):
                 values.append(REPLACEMENTS[child['name']])
             elif child['name'] == "WS":
                 values.append(' ')
+            elif child['name'] == "':='":
+                values.append(':')
             else:
                 self.debug("ValueStmt, can't handle {0}".format(child['name']))
                 self._failed = True
         if self._failed:
             return
+        if ':' in values:
+            if len(values) == 3 and values[0].startswith("'") and values[0].endswith("'"):
+                return '{{{0}}}'.format(''.join(values))
+            else:
+                self._failed = True
+                return
         return ''.join(values)
 
     def __validate_keywork(self, name):
