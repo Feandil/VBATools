@@ -32,10 +32,10 @@ class EmailFeeder(object):
         if url:
             self.url = '{0}/email/new'.format(url)
         else:
-            url = None
+            self.url = None
 
     def send(self, payload):
-        if url:
+        if self.url:
             files = [('emails', ('email.eml', payload, 'message/rfc822'))]
             req = requests.post(self.url, files=files)
             if req.status_code != 200:
