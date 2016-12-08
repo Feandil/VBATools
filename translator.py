@@ -64,6 +64,8 @@ def return_or_block(func):
     def wrapped(self, *args, **kwargs):
         val = func(self, *args, **kwargs)
         if self._failed:
+            if 'raw' in kwargs and kwargs['raw']:
+                return (None, None)
             return
         if 'ret' in kwargs and kwargs['ret']:
             return val
@@ -607,6 +609,8 @@ class Translator(object):
                 member = self._handle(child, ret=True, left=left)
             elif child['name'] in ['subscripts', 'argsCall']:
                 arguments.append(self._handle(child, ret=True))
+        if self._failed:
+            return (None, None)
         return self.__handle_membercall(name, member, ', '.join(arguments))
 
     @block_only
