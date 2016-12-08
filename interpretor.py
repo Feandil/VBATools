@@ -11,6 +11,8 @@ from __future__ import print_function
 UNKNOWN_METHOD_CALL='''
 def method_call(obj, meth, args):
     global Error_code, Error_source, Error_pass, Error_description
+    if obj == 'Application' and meth == 'CleanString' and len(args) == 1:
+        return clean_string(args[0])
     if obj != 'Err':
         raise(NotImplementedError("Methods {1} of object {0} not implemented".format(obj, meth)))
     if not Error_pass:
@@ -66,6 +68,32 @@ def disable_errors():
     Error_pass = True
 '''
 
+CLEAN_STRING='''
+def clean_string(raw):
+    ret = ""
+    for char in raw:
+        o = ord(char)
+        if o == 7:
+            if len(ret) and ret[-1] == chr(9):
+                ret += chr(9)
+            else:
+                continue
+        elif o == 10:
+            if len(ret) and ret[-1] == chr(13):
+                ret += chr(9)
+            else:
+                continue
+        elif o == 13:
+            ret += char
+        elif o in [31, 172, 182] or o <= 29:
+            continue
+        elif o in [160, 176, 182]:
+            ret += ' '
+        else:
+            ret += char
+    return ret
+'''
+
 class Interpretor(object):
 
     def __init__(self):
@@ -74,6 +102,7 @@ class Interpretor(object):
                                             'set': __builtins__['set'],
                                             'list': __builtins__['list'],
                                             'dict': __builtins__['dict'],
+                                            'ord': __builtins__['ord'],
                                             'chr': __builtins__['chr'],
                                             'len': __builtins__['len'],
                                             'bool': __builtins__['bool'],
@@ -92,6 +121,7 @@ class Interpretor(object):
         }
         self.add_fun('disable_errors', DISABLE_ERRORS)
         self.add_fun('method_call', UNKNOWN_METHOD_CALL)
+        self.add_fun('clean_string', CLEAN_STRING)
 
     def _reset_errors(self):
         self._globals['Error_pass'] = False

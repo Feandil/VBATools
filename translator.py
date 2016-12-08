@@ -42,7 +42,7 @@ FUN_REPLACEMENTS = {
     "Sgn": [(1, '(lambda x: (0 if x == 0 else (1 if x > 0 else -1)))({0})')],
 }
 
-KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise', 'vbLowerCase', 'vbUpperCase']
+KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise', 'Application', 'CleanString', 'vbLowerCase', 'vbUpperCase']
 
 PROC_OK = set(['Array'])
 PROC_OK.update(FUN_REPLACEMENTS)
