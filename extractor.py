@@ -9,7 +9,10 @@ from __future__ import print_function
 
 from collections import Sequence
 
-from oletools.olevba import VBA_Parser
+try:
+    from oletools.olevba import VBA_Parser
+except ImportError:
+    from oletools.olevba3 import VBA_Parser
 
 class Extractor(Sequence):
 
