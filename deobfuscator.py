@@ -201,6 +201,12 @@ class Deobfuscator(Parser):
             for ws in self.findall(node, 'WS'):
                 ws['value'] = ' '
 
+    def clean_newlines(self):
+        for node in [self.attr, self.decl, self.body]:
+            for newline in self.findall(node, 'endOfStatement'):
+                newline.clear()
+                newline.update(self.newline())
+
     def _useless_attr(self, attrst):
         simple_attr = self.xpath(attrst, ['implicitCallStmt_InStmt', 'iCS_S_VariableOrProcedureCall'])
         if not simple_attr:
@@ -440,6 +446,7 @@ if __name__ == '__main__':
     deob.clean_attr()
     deob.clean_arithmetic()
     deob.clean_whitespaces()
+    deob.clean_newlines()
     deob.clean_ids()
     deob.clean_resolvable()
     deob.inline_functions()

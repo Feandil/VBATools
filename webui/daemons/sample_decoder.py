@@ -32,6 +32,7 @@ class SampleDecoder(object):
         deob.clean_attr()
         deob.clean_arithmetic()
         deob.clean_whitespaces()
+        deob.clean_newlines()
         deob.clean_ids()
         decoded = deob.get_text()
         hashes = hash(decoded)

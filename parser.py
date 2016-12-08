@@ -7,6 +7,7 @@
 
 from __future__ import print_function
 
+from copy import deepcopy
 import inspect
 import json
 import os.path
@@ -14,6 +15,21 @@ from subprocess import Popen, PIPE
 import sys
 
 class Parser(object):
+
+    NEWLINE = {
+        "name": "endOfStatement",
+        "children": [
+            {
+                "name": "endOfLine",
+                "children": [
+                    {
+                        "name": "NEWLINE",
+                        "value": "\n"
+                    }
+                ]
+            }
+        ]
+    }
 
     def _parse(self, data):
         jars = ['VBA.jar', 'antlr4-4.5.3.jar', 'gson-2.7.jar']
@@ -177,6 +193,10 @@ class Parser(object):
         if 'children' in node:
             for child in node['children']:
                 self.print_node(child, indent=(indent+2))
+
+    @classmethod
+    def newline(cls):
+        return deepcopy(cls.NEWLINE)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
