@@ -36,10 +36,10 @@ FUN_REPLACEMENTS = {
     "UBound": [(1, 'len({0}) - 1')],
     "Chr": [(1, 'chr({0})')],
     "Len": [(1, 'len({0})')],
-    "Mid": [(3, '{0}[({1}-1):({1}-1+{2})]'), (2, '{0}[({1}-1):]')],
+    "Mid": [(3, '(lambda x: {0}[(x-1):(x-1+{2})])({1})'), (2, '{0}[({1}-1):]')],
     "Left": [(2, '{0}[:{1}]')],
     "Right": [(2, '{0}[-{1}:]')],
-    "Sgn": [(1, '(0 if ({0}) == 0 else (1 if ({0}) > 0 else -1))')],
+    "Sgn": [(1, '(lambda x: (0 if x == 0 else (1 if x > 0 else -1)))({0})')],
 }
 
 KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise']
