@@ -134,6 +134,7 @@ class Translator(object):
     _handle_implicitCallStmt_InStmt = __pass_through
     _handle_literal = __pass_through
     _handle_implicitCallStmt_InBlock = __pass_through
+    _handle_ifConditionStmt = __pass_through
 
     @block_only
     def __run_all(self, node, ret=False, left=False):
@@ -698,6 +699,102 @@ class Translator(object):
                 self._failed = True
         if not self._failed:
             self._add_line('disable_errors()')
+
+    @block_only
+    def _handle_ifElseIfBlockStmt(self, node, ret=False, left=False):
+        condition = None
+        position = 0
+        for (pos, child) in enumerate(node['children']):
+            if child['name'] in ['ELSEIF', 'WS']:
+                pass
+            elif child['name'] == 'ifConditionStmt':
+                condition = self._handle(child, ret = True)
+                position = pos
+                break
+            else:
+                self.debug("ifElseIfBlockStmt, can't handle {0} early".format(child['name']))
+                self._failed = True
+        if self._failed:
+             return
+        self._add_line('elif({0}):'.format(condition))
+        with self:
+            for child in node['children'][position:]:
+                if child['name'] in ['THEN', 'WS', 'endOfStatement']:
+                    pass
+                elif child['name'] == 'block':
+                    self._handle(child)
+                else:
+                    self.debug("ifElseIfBlockStmt, can't handle {0} late".format(child['name']))
+                    self._failed = True
+
+    def __handle_ifStmt(self, node, operator):
+        condition = None
+        position = 0
+        for (pos, child) in enumerate(node['children']):
+            if child['name'] in ['IF', 'ELSEIF', 'WS']:
+                pass
+            elif child['name'] == 'ifConditionStmt':
+                condition = self._handle(child, ret = True)
+                position = pos + 1
+                break
+            else:
+                self.debug("ifElseIfBlockStmt, can't handle {0} early".format(child['name']))
+                self._failed = True
+        if self._failed:
+             return
+        self._add_line('{0} ({1}):'.format(operator, condition))
+        with self:
+            for child in node['children'][position:]:
+                if child['name'] in ['THEN', 'WS', 'endOfStatement']:
+                    pass
+                elif child['name'] == 'block':
+                    self._handle(child)
+                else:
+                    self.debug("ifElseIfBlockStmt, can't handle {0} late".format(child['name']))
+                    self._failed = True
+
+    @block_only
+    def _handle_ifBlockStmt(self, node, ret=False, left=False):
+        self.__handle_ifStmt(node, 'if')
+
+    @block_only
+    def _handle_ifElseIfBlockStmt(self, node, ret=False, left=False):
+        self.__handle_ifStmt(node, 'elseif')
+
+    @block_only
+    def _handle_ifElseBlockStmt(self, node, ret=False, left=False):
+        self._add_line('else:')
+        with self:
+            for child in node['children']:
+                if child['name'] in ['ELSE', 'WS']:
+                    pass
+                elif child['name'] == 'block':
+                    self._handle(child)
+                else:
+                    self.debug("ifElseBlockStmt, can't handle {0}".format(child['name']))
+                    self._failed = True
+
+    @block_only
+    def _handle_ifThenElseStmt(self, node, ret=False, left=False):
+        if len(node['children']) == 0:
+            self._failed = True
+            return
+        child = node['children'][0]
+        if child['name'] == 'ifBlockStmt':
+            for child in node['children']:
+                if child['name'] in ['ifBlockStmt', 'ifElseIfBlockStmt', 'ifElseBlockStmt']:
+                    self._handle(child)
+                elif child['name'] == 'END_IF':
+                    pass
+                else:
+                    self.debug("ifThenElseStmt, can't handle {0}".format(child['name']))
+                    self._failed = True
+        elif child['name'] == 'IF':
+            self.debug("ifThenElseStmt, too lazy")
+            self._failed = True
+        else:
+            self.debug("ifThenElseStmt, can't handle {0}".format(child['name']))
+            self._failed = True
 
     def parsed(self):
         return not self._failed
