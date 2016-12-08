@@ -13,8 +13,6 @@ import os.path
 from subprocess import Popen, PIPE
 import sys
 
-from oletools.olevba import VBA_Parser
-
 class Parser(object):
 
     def _parse(self, data):
