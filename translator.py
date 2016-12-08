@@ -8,6 +8,7 @@
 from __future__ import print_function
 
 from functools import wraps
+import re
 
 from parser import Parser
 
@@ -42,7 +43,7 @@ FUN_REPLACEMENTS = {
     "Sgn": [(1, '(lambda x: (0 if x == 0 else (1 if x > 0 else -1)))({0})')],
 }
 
-KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise', 'Application', 'CleanString', 'vbLowerCase', 'vbUpperCase']
+KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise', 'Application', 'CleanString', 'Module0', 'Module1', 'Module2', 'Module3', 'vbLowerCase', 'vbUpperCase']
 
 PROC_OK = set(['Array'])
 PROC_OK.update(FUN_REPLACEMENTS)
@@ -557,6 +558,10 @@ class Translator(object):
         member = self.__validate_keywork(member)
         if self._failed:
              return
+        if re.match("'Module[0-9]*'", name):
+            if member.endswith('()'):
+                member = member.rstrip('()')
+            return self.__handle_procedure_call(member, arguments.split(', '))
         if arguments:
             return "method_call({0}, {1}, [{2}])".format(name, member, arguments)
         else:
