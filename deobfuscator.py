@@ -86,18 +86,21 @@ class Deobfuscator(Parser):
         ids = self.getallidentifiers(proc)
         deps = set()
         ids.discard(proc_name)
+        for id in self._var:
+            if id in ids:
+                deps.add(id)
         for lst in [self.proc_arguments(proc), self.local_variables(proc)]:
             for id in lst:
                 ids.discard(id)
-        for lst in [self._var, self._proc]:
-            for id in lst:
-                if id in ids:
-                    deps.add(id)
+        for id in self._proc:
+            if id in ids:
+                deps.add(id)
         return (ids, deps)
 
     def _build_deps(self):
         proc_dep = {}
         reverse_dep = {}
+        var_dep = {}
         for proc in self._proc:
             (all_deps, proc_deps) = self._proc_deps(proc)
             proc_dep[proc] = set(all_deps)
@@ -106,7 +109,13 @@ class Deobfuscator(Parser):
                     reverse_dep[dep].add(proc)
                 except KeyError:
                     reverse_dep[dep] = set([proc])
-        return (proc_dep, reverse_dep)
+            for var in self._var:
+                if var in all_deps:
+                    try:
+                        var_dep[var].add(proc)
+                    except KeyError:
+                        var_dep[var] = set([proc])
+        return (proc_dep, reverse_dep, var_dep)
 
     def _next_name(self):
         self._index +=1
@@ -169,9 +178,9 @@ class Deobfuscator(Parser):
                             variable not in arguments and
                             variable not in self._identifier_order):
                         self.rename(variable, proc)
-        (_, reverse_dep) = self._build_deps()
+        (_, reverse_dep, var_dep) = self._build_deps()
         for id in self._identifier_order:
-            if id in reverse_dep:
+            if id in reverse_dep or id in var_dep:
                 new_name = self.rename(id)
 
     def clean_arithmetic(self):
@@ -319,7 +328,7 @@ class Deobfuscator(Parser):
                         self.debug('Not removing {0}, still used by ({1}): {2}'.format(proc, len(reverse_dep[proc]), ', '.join(reverse_dep[proc])))
 
     def clean_resolvable(self):
-        (proc_dep, reverse_dep) = self._build_deps()
+        (proc_dep, reverse_dep, _) = self._build_deps()
         done = False
         non_translatable = set()
         translated = set()
@@ -389,7 +398,7 @@ class Deobfuscator(Parser):
         return node['value']
 
     def inline_functions(self):
-        (proc_dep, reverse_dep) = self._build_deps()
+        (proc_dep, reverse_dep, _) = self._build_deps()
         work_deps = copy.deepcopy(proc_dep)
         for caller in work_deps:
             work_deps[caller] = [callee for callee in work_deps[caller] if callee in self._proc]
@@ -409,7 +418,7 @@ class Deobfuscator(Parser):
                     if proc in reverse_dep:
                         for caller in reverse_dep[proc]:
                             work_deps[caller].remove(proc)
-        (_, new_reverse_dep) = self._build_deps()
+        (_, new_reverse_dep, _) = self._build_deps()
         for proc in reverse_dep:
             if proc not in new_reverse_dep:
                 reverse_dep[proc] = set([])
