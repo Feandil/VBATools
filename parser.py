@@ -26,7 +26,7 @@ class Parser(object):
         return json.loads(out)
 
     @classmethod
-    def _get_text(cls, node):
+    def get_node_text(cls, node):
         ret = []
         if node['name'] == 'EOF':
             return ret
@@ -34,7 +34,7 @@ class Parser(object):
             ret.append(node['value'])
         if 'children' in node:
             for child in node['children']:
-                ret.extend(cls._get_text(child))
+                ret.extend(cls.get_node_text(child))
         return ret
 
     @classmethod
@@ -165,12 +165,12 @@ class Parser(object):
 
     def get_text(self, node=None):
         if node is None:
-            attrs = self._get_text(self.attr)
-            decls = self._get_text(self.decl)
-            body = self._get_text(self.body)
+            attrs = self.get_node_text(self.attr)
+            decls = self.get_node_text(self.decl)
+            body = self.get_node_text(self.body)
             return ''.join([''.join(attrs), ''.join(decls), ''.join(body)])
         else:
-            return ''.join(self._get_text(node))
+            return ''.join(self.get_node_text(node))
 
     def print_node(self, node, indent=0):
         print('{0}{1}:{2}'.format(' '*indent, node['name'], node['value'] if 'value' in node else ""))
