@@ -4,6 +4,7 @@ vbaLexer.tokens
 vbaParser.java
 __pycache__/
 __class__/
+webui/migrations/
 *.pyc
 *.pyo
 *.doc
