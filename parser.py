@@ -115,6 +115,11 @@ class Parser(object):
                 name = cls.identifier_name(sub_stmt)
                 if name and name not in ret:
                     ret.append(name)
+        for stmt in cls.findall(node, 'constStmt'):
+            for sub_stmt in cls.findall(stmt, 'constSubStmt'):
+                name = cls.identifier_name(sub_stmt)
+                if name and name not in ret:
+                    ret.append(name)
         for node_type in ['lineLabel', 'forEachStmt', 'forNextStmt']:
             for stmt in cls.findall(node, node_type):
                 name = cls.identifier_name(stmt)
