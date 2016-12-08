@@ -41,7 +41,7 @@ FUN_REPLACEMENTS = {
     "Right": [(2, '{0}[-{1}:]')],
 }
 
-KEYWORDS_OK = ['Err', 'Source', 'Number', 'Raise']
+KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise']
 
 PROC_OK = set(['Array'])
 PROC_OK.update(FUN_REPLACEMENTS)
