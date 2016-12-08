@@ -246,6 +246,7 @@ class Translator(object):
                  'LONG': 'long({0})',
                  'STRING': 'str({0})',
                  'VARIANT': '{0}',
+                 'BYTE': '(lambda x: ((1/0) if int(x) < 0 else ((1/0) if int(x) > 255 else int(x))))({0})',
         }
         try:
             return TYPES[node['children'][0]['name']]
