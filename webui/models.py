@@ -14,7 +14,7 @@ class EmailRecipient(models.Model):
     email = models.ForeignKey('Email', related_name='recipients', on_delete=models.CASCADE)
 
 class Sample(models.Model):
-    email = models.ForeignKey('Email', related_name='samples', on_delete=models.CASCADE, null=True, blank=True)
+    email = models.ManyToManyField('Email', related_name='samples')
     filename = models.CharField(max_length=100)
     size = models.IntegerField()
     md5 = models.CharField(max_length=32)
@@ -22,6 +22,8 @@ class Sample(models.Model):
     sha256 = models.CharField(max_length=64)
     decoded = models.ForeignKey('DecodedVBA', related_name='samples', on_delete=models.CASCADE, null=True, blank=True)
     deobfuscated = models.ForeignKey('DeobfuscatedVBA', related_name='samples', on_delete=models.CASCADE, null=True, blank=True)
+    class Meta:
+        unique_together = ('filename', 'size', 'md5', 'sha1', 'sha256')
 
 class RawVBA(models.Model):
     sample = models.ForeignKey('Sample', related_name='raw', on_delete=models.CASCADE)

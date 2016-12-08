@@ -22,12 +22,15 @@ def process_file(raw_data, filename=None, email=None):
     }
     content.update(hash(raw_data))
     with transaction.atomic():
+        try:
+            sample = Sample.objects.all().get(**content)
+        except:
+            sample = Sample(**content)
+            sample.save()
+            for (pos, vba) in enumerate(vbas):
+                RawVBA(sample=sample, position=pos, content=vba).save()
         if email is not None:
-            content['email'] = email
             email.save()
-        sample = Sample(**content)
-        sample.save()
-        for (pos, vba) in enumerate(vbas):
-            RawVBA(sample=sample, position=pos, content=vba).save()
+            sample.email.add(email)
     submit_sample(sample)
     return sample.id
