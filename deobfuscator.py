@@ -260,7 +260,7 @@ class Deobfuscator(Parser):
         for proccall in (self.findall(node, 'iCS_B_ProcedureCall') + self.findall(node, 'iCS_S_VariableOrProcedureCall')):
             name = self.identifier_name(proccall)
             if name == proc:
-                translator = Translator(self, proccall['parent'], known_functions=known_functions, debug=self._debug)
+                translator = Translator(proccall['parent'], known_functions=known_functions, debug=self._debug)
                 if not translator.parsed():
                     replaced = False
                     continue
@@ -330,7 +330,7 @@ class Deobfuscator(Parser):
                 if proc in non_translatable or proc in translated:
                     continue
                 if proc_dep[proc].issubset(good):
-                    translator = Translator(self, self._proc[proc], known_functions=translated, debug=self._debug)
+                    translator = Translator(self._proc[proc], known_functions=translated, debug=self._debug)
                     if not translator.parsed():
                         self.debug("Can't translate {0}".format(proc))
                         non_translatable.add(proc)

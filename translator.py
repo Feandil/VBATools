@@ -86,8 +86,7 @@ def block_only(func):
 
 class Translator(object):
 
-    def __init__(self, parser, node, known_variables=[], known_functions=[], ret=False, debug=False):
-        self._parser = parser
+    def __init__(self, node, known_variables=[], known_functions=[], ret=False, debug=False):
         self._ident = 0
         self._name = None
         self._expect_args = False
@@ -275,10 +274,10 @@ class Translator(object):
 
     @block_only
     def _handle_proc(self, node, ret=False, left=False):
-        name = self._parser.identifier_name(node)
+        name = Parser.identifier_name(node)
         self._name = name
         self._functions.add(name)
-        raw_args = self._parser.xpath(node, ['argList'])
+        raw_args = Parser.xpath(node, ['argList'])
         if raw_args:
             arguments = self._handle(raw_args[0], ret=True)
         else:
@@ -303,7 +302,7 @@ class Translator(object):
                     self._add_line('{0} = {1}'.format(arg, type.format(arg)))
             orig_code = self._code
             self._code = ""
-            blocks = self._parser.xpath(node, ['block'])
+            blocks = Parser.xpath(node, ['block'])
             if not blocks:
                 self._add_line('pass')
             else:
@@ -694,7 +693,7 @@ class Translator(object):
 
     @block_only
     def _handle_variableStmt(self, node, ret=False, left=False):
-        for child in self._parser.xpath(node, ['variableListStmt', 'variableSubStmt']):
+        for child in Parser.xpath(node, ['variableListStmt', 'variableSubStmt']):
             self._handle(child, ret=False, left=False)
 
     @block_only
@@ -729,7 +728,7 @@ class Translator(object):
             self.debug("doLoopStmt, nothing?")
             self._failed = True
             return
-        valueStmts = self._parser.xpath(node, ['valueStmt'])
+        valueStmts = Parser.xpath(node, ['valueStmt'])
         if not valueStmts or len(valueStmts) != 1:
             self.debug("doLoopStmt, bad valueStmt: {0}".format(valueStmts))
             self._failed = True
@@ -744,7 +743,7 @@ class Translator(object):
         else:
             self._add_line('while ({0}):'.format(condition))
         with self:
-            for block in self._parser.xpath(node, ['block']):
+            for block in Parser.xpath(node, ['block']):
                 self._handle(block)
             if self._failed:
                 return
