@@ -427,7 +427,7 @@ class Translator(object):
             self.debug('Unknown keyword "{0}"'.format(name))
             self._failed = True
 
-    def __handle_procedure_call(self, name, arguments, ret=False, left=False, raw=False):
+    def __handle_procedure_call(self, name, arguments, left=False, raw=False):
         if self._failed or not name:
             self._failed = True
             return (None, None)
@@ -495,7 +495,7 @@ class Translator(object):
             else:
                 self.debug("iCS_S_VariableOrProcedureCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        return self.__handle_procedure_call(name, [subscript], ret=ret, left=left, raw=raw)
+        return self.__handle_procedure_call(name, [subscript], left=left, raw=raw)
 
     @return_or_block
     def _handle_iCS_B_ProcedureCall(self, node, ret=False, left=False, raw=False):
@@ -511,7 +511,7 @@ class Translator(object):
             else:
                 self.debug("iCS_S_VariableOrProcedureCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        return self.__handle_procedure_call(name, subscript, ret=ret, left=left, raw=raw)
+        return self.__handle_procedure_call(name, subscript, left=left, raw=raw)
 
     @return_or_block
     def _handle_iCS_S_ProcedureOrArrayCall(self, node, ret=False, left=False, raw=False):
@@ -527,7 +527,7 @@ class Translator(object):
             else:
                 self.debug("iCS_S_ProcedureOrArrayCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        return self.__handle_procedure_call(name, subscript, ret=ret, left=left, raw=raw)
+        return self.__handle_procedure_call(name, subscript, left=left, raw=raw)
 
     @return_only
     def _handle_iCS_S_MemberCall(self, node, ret=False, left=False, raw=False):
