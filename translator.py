@@ -42,7 +42,7 @@ FUN_REPLACEMENTS = {
     "Sgn": [(1, '(lambda x: (0 if x == 0 else (1 if x > 0 else -1)))({0})')],
 }
 
-KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise']
+KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise', 'vbLowerCase', 'vbUpperCase']
 
 PROC_OK = set(['Array'])
 PROC_OK.update(FUN_REPLACEMENTS)
@@ -418,6 +418,20 @@ class Translator(object):
                 return '[{0}]'.format(arguments)
             elif name in self._functions:
                 return '{0}({1})'.format(name, arguments)
+            elif name == 'StrConv':
+                args = arguments.split(',')
+                if len(args) != 2:
+                    self.debug("Procedure_call: wrong number of arguments for StrConv: {0}".format(len(args)))
+                    self._failed = True
+                    return
+                if args[1] == "'vbLowerCase'":
+                    return 'str({0}).lower()'.format(args[0])
+                elif args[1] == "'vbUpperCase'":
+                    return 'str({0}).upper()'.format(args[0])
+                else:
+                    self.debug("Procedure_call: StrConv doesn't support {0}".format(args[1]))
+                    self._failed = True
+                    return
             else:
                 self.debug("Procedure_call: can't handle {0}".format(name))
                 self._failed = True
