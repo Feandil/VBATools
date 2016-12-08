@@ -39,6 +39,7 @@ FUN_REPLACEMENTS = {
     "Mid": [(3, '{0}[({1}-1):({1}-1+{2})]'), (2, '{0}[({1}-1):]')],
     "Left": [(2, '{0}[:{1}]')],
     "Right": [(2, '{0}[-{1}:]')],
+    "Sgn": [(1, '(0 if ({0}) == 0 else (1 if ({0}) > 0 else -1))')],
 }
 
 KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise']
