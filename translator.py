@@ -344,6 +344,45 @@ class Translator(object):
 
     _handle_setStmt = _handle_letStmt
 
+    @block_only
+    def _handle_constSubStmt(self, node, ret=False, left=False):
+        variable = value = type = None
+        for child in node['children']:
+            if child['name'] == 'ambiguousIdentifier':
+                variable = self._handle(child, ret=True, left=True)
+            elif child['name'] in ["'='", "WS"]:
+                pass
+            elif child['name'] == 'asTypeClause':
+                type = self._handle(child, ret=True)
+            elif child['name'] == 'valueStmt':
+                value = self._handle(child, ret=True)
+            else:
+                self.debug("constSubStmt, can't handle {0}".format(child['name']))
+                self._failed = True
+        if variable is None or value is None:
+            self._failed = True
+        if self._failed:
+            return
+        if type is not None:
+            self._add_line(' = '.join([variable, type.format(value)]))
+        else:
+            self._add_line(' = '.join([variable, value]))
+        if variable == self._name:
+            self._overriden_functions.add(variable)
+            self._ret = True
+
+
+    @block_only
+    def _handle_constStmt(self, node, ret=False, left=False):
+        for child in node['children']:
+            if child['name'] == 'constSubStmt':
+                self._handle(child, ret=ret, left=left)
+            elif child['name'] in ['visibility', 'WS', 'CONST', 'WS']:
+                pass
+            else:
+                self.debug("constStmt, can't handle {0}".format(child['name']))
+                self._failed = True
+
     @return_or_block
     def _handle_valueStmt(self, node, ret=False, left=False):
         values = []
