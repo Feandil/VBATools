@@ -20,9 +20,14 @@ class SampleDeobfuscator(object):
             raise NotImplementedError
 
     def _get(self):
-        return Sample.objects.all().filter(deobfuscated__isnull=True, decoded__isnull=False).select_related('deobfuscated')
+        return Sample.objects.all().filter(deobfuscated__isnull=True, decoded__isnull=False).select_related('decoded')
 
     def _process(self, sample):
+        similar = Sample.objects.all().filter(deobfuscated__isnull=False, decoded__exact=sample.decoded).first()
+        if similar:
+            sample.deobfuscated = similar.deobfuscated
+            sample.save()
+            return
         deob = Deobfuscator([sample.decoded.content])
         deob.clean_resolvable()
         deob.inline_functions()
@@ -38,5 +43,7 @@ class SampleDeobfuscator(object):
             sample.save()
 
     def process(self):
-        for sample in self._get():
+        with transaction.atomic():
+            samples = self._get()
+        for sample in samples:
             self._process(sample)

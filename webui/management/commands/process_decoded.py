@@ -1,10 +1,13 @@
 from django.core.management.base import BaseCommand
 
+from time import sleep
 from ...daemons import SampleDeobfuscator
 
 class Command(BaseCommand):
-    help = 'Process raw VBAs'
+    help = 'Deobfucate decoded VBAs'
 
     def handle(self, *args, **options):
         deobf = SampleDeobfuscator()
-        deobf.process()
+        while True:
+            deobf.process()
+            sleep(60)

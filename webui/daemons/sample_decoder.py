@@ -28,6 +28,7 @@ class SampleDecoder(object):
         try:
             deob = Deobfuscator(raws)
         except RuntimeError:
+            print('Unable to process sample {0}'.format(sample.id))
             return
         deob.clean_attr()
         deob.clean_arithmetic()
@@ -47,5 +48,7 @@ class SampleDecoder(object):
             sample.save()
 
     def process(self):
-        for sample in self._get():
+        with transaction.atomic():
+            samples = self._get()
+        for sample in samples:
             self._process(sample)
