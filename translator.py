@@ -427,19 +427,21 @@ class Translator(object):
             self.debug('Unknown keyword "{0}"'.format(name))
             self._failed = True
 
-    def __handle_procedure_call(self, name, arguments, left=False, raw=False):
+    def __handle_procedure_call(self, name, raw_arguments, left=False, raw=False, formatted=True):
         if self._failed or not name:
             self._failed = True
             return (None, None)
-        arguments = ', '.join(arguments)
+        if formatted:
+            arguments = ', '.join(raw_arguments)
+        else:
+            arguments = raw_arguments
         if raw:
             return (name, arguments)
         if name in FUN_REPLACEMENTS and arguments:
-            args = arguments.split(',')
             for (length, format) in FUN_REPLACEMENTS[name]:
-                if len(args) == length:
-                    return format.format(*args)
-            self.debug('Wrong number of arguments for {0}: {1}'.format(name, len(args)))
+                if len(raw_arguments) == length:
+                    return format.format(*raw_arguments)
+            self.debug('Wrong number of arguments for {0} ({1}): {2}'.format(name, len(raw_arguments), raw_arguments))
             self._failed = True
         elif left:
             self._functions.discard(name)
@@ -482,59 +484,59 @@ class Translator(object):
             return self.__validate_keywork(name)
 
     @return_or_block
-    def _handle_iCS_S_VariableOrProcedureCall(self, node, ret=False, left=False, raw=False):
+    def _handle_iCS_S_VariableOrProcedureCall(self, node, ret=False, left=False, raw=False, formatted=True):
         name = None
-        subscript = ""
+        subscript = []
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
                 name = self._handle(child, ret=True)
             elif child['name'] == 'subscripts':
-                subscript = self._handle(child, ret=True)
+                subscript = self._handle(child, ret=True, formatted=False)
             elif child['name'] in ["'('", "')'"]:
                 pass
             else:
                 self.debug("iCS_S_VariableOrProcedureCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        return self.__handle_procedure_call(name, [subscript], left=left, raw=raw)
+        return self.__handle_procedure_call(name, subscript, left=left, raw=raw, formatted=formatted)
 
     @return_or_block
-    def _handle_iCS_B_ProcedureCall(self, node, ret=False, left=False, raw=False):
+    def _handle_iCS_B_ProcedureCall(self, node, ret=False, left=False, raw=False, formatted=True):
         name = None
         subscript = []
         for child in node['children']:
             if child['name'] == 'certainIdentifier':
                 name = self._handle(child, ret=True)
             elif child['name'] in ['subscripts', 'argsCall']:
-                subscript.append(self._handle(child, ret=True))
+                subscript.extend(self._handle(child, ret=True, formatted=False))
             elif child['name'] in ["'('", "')'", 'WS']:
                 pass
             else:
                 self.debug("iCS_S_VariableOrProcedureCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        return self.__handle_procedure_call(name, subscript, left=left, raw=raw)
+        return self.__handle_procedure_call(name, subscript, left=left, raw=raw, formatted=formatted)
 
     @return_or_block
-    def _handle_iCS_S_ProcedureOrArrayCall(self, node, ret=False, left=False, raw=False):
+    def _handle_iCS_S_ProcedureOrArrayCall(self, node, ret=False, left=False, raw=False, formatted=True):
         name = None
         subscript = []
         for child in node['children']:
             if child['name'] == 'ambiguousIdentifier':
                 name = self._handle(child, ret=True)
             elif child['name'] in ['subscripts', 'argsCall']:
-                subscript.append(self._handle(child, ret=True))
+                subscript.extend(self._handle(child, ret=True, formatted=False))
             elif child['name'] in ["'('", "')'", 'WS']:
                 pass
             else:
                 self.debug("iCS_S_ProcedureOrArrayCall, can't handle {0}".format(child['name']))
                 self._failed = True
-        return self.__handle_procedure_call(name, subscript, left=left, raw=raw)
+        return self.__handle_procedure_call(name, subscript, left=left, raw=raw, formatted=formatted)
 
     @return_only
-    def _handle_iCS_S_MemberCall(self, node, ret=False, left=False, raw=False):
+    def _handle_iCS_S_MemberCall(self, node, ret=False, left=False, raw=False, formatted=True):
         res = (None, None)
         for child in node['children']:
             if child['name'] in ['iCS_S_VariableOrProcedureCall', 'iCS_S_ProcedureOrArrayCall']:
-                res = self._handle(child, ret=True, left=left, raw=True)
+                res = self._handle(child, ret=True, left=left, raw=True, formatted=formatted)
             elif child['name'] == "'.'":
                 pass
             else:
@@ -586,13 +588,13 @@ class Translator(object):
                     self.debug("iCS_S_MembersCall, dupplicate member")
                     self._failed = True
                     return
-                (member, arguments) = self._handle(child, ret=True, left=left, raw=True)
+                (member, arguments) = self._handle(child, ret=True, left=left, formatted=False)
             elif child['name'] == 'subscripts':
                 if arguments:
                     self.debug("iCS_S_MembersCall, dupplicate member")
                     self._failed = True
                     return
-                arguments = self._handle(child, ret=True)
+                arguments = self._handle(child, ret=True, formatted=False)
             elif child['name'] in ["'('", "')'", 'WS']:
                 pass
             else:
@@ -613,7 +615,7 @@ class Translator(object):
             elif child['name'] == 'ambiguousIdentifier':
                 member = self._handle(child, ret=True, left=left)
             elif child['name'] in ['subscripts', 'argsCall']:
-                arguments.append(self._handle(child, ret=True))
+                arguments.append(self._handle(child, ret=True, formatted=False))
         if self._failed:
             return (None, None)
         return self.__handle_membercall(name, member, ', '.join(arguments))
@@ -640,13 +642,14 @@ class Translator(object):
                 self._handle(block)
 
     @return_or_block
-    def _handle_subscripts(self, node, ret=False, left=False):
+    def _handle_subscripts(self, node, ret=False, left=False, formatted=True):
         subs = []
         for child in node['children']:
             if child['name'] == 'subscript':
                 subs.append(self._handle(child, ret=True, left=left))
             elif child['name'] == "','":
-                subs.append(',')
+                if formatted:
+                    subs.append(',')
             elif child['name'] == 'WS':
                 pass
             else:
@@ -654,6 +657,8 @@ class Translator(object):
                 self._failed = True
         if self._failed:
             return
+        if not formatted:
+            return subs
         return ''.join(subs)
 
     @return_only
@@ -664,7 +669,7 @@ class Translator(object):
         self._failed = True
 
     @return_or_block
-    def _handle_argsCall(self, node, ret=False, left=False):
+    def _handle_argsCall(self, node, ret=False, left=False, formatted=True):
         args = []
         for child in node['children']:
             if child['name'] == 'argCall':
@@ -676,6 +681,8 @@ class Translator(object):
                 self._failed = True
         if self._failed:
             return
+        if not formatted:
+            return args
         return ', '.join(args)
 
     @return_or_block

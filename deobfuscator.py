@@ -12,6 +12,7 @@ import re
 import string
 
 from parser import Parser
+from cleaner import Cleaner
 from translator import PROC_OK, Translator
 from interpretor import Interpretor
 
@@ -430,6 +431,10 @@ class Deobfuscator(Parser):
                 reverse_dep[proc] = set([])
         self._clean_up_function(inlined, proc_dep, reverse_dep)
 
+    def clean_functions(self):
+        for proc in self._proc:
+            Cleaner(known_var=self._var, debug=self._debug).clean(self._proc[proc], proc)
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) != 2 and (len(sys.argv) != 3 or sys.argv[1] != '-d'):
@@ -448,6 +453,7 @@ if __name__ == '__main__':
     deob.clean_whitespaces()
     deob.clean_newlines()
     deob.clean_ids()
+    deob.clean_functions()
     deob.clean_resolvable()
     deob.inline_functions()
     print(deob.get_text())
