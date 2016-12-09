@@ -13,24 +13,22 @@ import re
 from parser import Parser
 
 IDENT = 2
-REPLACEMENTS = {
-    "'('": '(',
-    "')'": ')',
-    "','": ',',
-    "'>='": '>=',
-    "'>'": '>',
-    "'<='": '<=',
-    "'<'": '<',
-    "'<>'": '!=',
-    "'='": '==',
-    "DIV": "/",
-    "'/'": "/",
-    "'*'": "*",
-    "MOD": "%",
-    "'+'": "+",
-    "'-'": '-',
-    "XOR": '^',
-    "'&'": '+',
+VALUEOPERATION = {
+    "'>='": [(2, '{0} >= {1}'),],
+    "'>'": [(2, '{0} > {1}'),],
+    "'<='": [(2, '{0} <= {1}'),],
+    "'<'": [(2, '{0} < {1}'),],
+    "'<>'": [(2, '{0} != {1}'),],
+    "'='": [(2, '{0} == {1}'),],
+    "DIV": [(2, '{0} / {1}'),],
+    "'/'": [(2, '{0} / {1}'),],
+    "'*'": [(2, '{0} * {1}'),],
+    "MOD": [(2, '{0} % {1}'),],
+    "'+'": [(2, '{0} + {1}'), (1, '+{0}')],
+    "'-'": [(2, '{0} - {1}'), (1, '-{0}')],
+    "XOR": [(2, 'int({0}) ^ int({1})'),],
+    "'&'": [(2, 'str({0}) + str({1})'),],
+    "':='": [],
 }
 
 FUN_REPLACEMENTS = {
@@ -390,27 +388,42 @@ class Translator(object):
     @return_or_block
     def _handle_valueStmt(self, node, ret=False, left=False):
         values = []
+        operation = None
+        parenthesis = False
         for child in node['children']:
             if child['name'] in ['valueStmt', 'literal', 'implicitCallStmt_InStmt']:
                 values.append(self._handle(child, ret=True, left=left))
-            elif child['name'] in REPLACEMENTS:
-                values.append(REPLACEMENTS[child['name']])
+            elif child['name'] in VALUEOPERATION:
+                operation = child['name']
             elif child['name'] == "WS":
-                values.append(' ')
-            elif child['name'] == "':='":
-                values.append(':')
+                pass
+            elif child['name'] in ["'('", "')'", "','"]:
+                parenthesis = True
             else:
                 self.debug("ValueStmt, can't handle {0}".format(child['name']))
                 self._failed = True
         if self._failed:
             return
-        if ':' in values:
-            if len(values) == 3 and values[0].startswith("'") and values[0].endswith("'"):
-                return '{{{0}}}'.format(''.join(values))
+        if operation is None:
+            if parenthesis:
+                return '({0})'.format(', '.join(values))
+            elif len(values) == 1:
+                return values[0]
             else:
+                self.debug("ValueStmt, unsuported number of values without an operation: {0}".format(len(values)))
                 self._failed = True
-                return
-        return ''.join(values)
+        elif operation == "':='":
+            if len(values) == 2 and values[0].startswith("'") and values[0].endswith("'"):
+                return '{{{0}: {1}}}'.format(values[0], values[1])
+            else:
+                self.debug("ValueStmt, unsuported assignmend")
+                self._failed = True
+        else:
+            for (length, format) in VALUEOPERATION[operation]:
+                if len(values) == length:
+                    return format.format(*values)
+            self.debug('Wrong number of arguments for {0} ({1}): {2}'.format(operation, len(values), values))
+            self._failed = True
 
     def __validate_keywork(self, name):
         if name in self._functions:
