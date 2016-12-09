@@ -19,6 +19,8 @@ class Cleaner(object):
         "'('", "')'", 'IF', "'<'",  "'<>'", 'THEN', 'BOOLEAN', 'LONG',
         'BYTE', 'INTEGER', 'DATE', 'DOUBLE', 'FOR', 'TO', 'LEN',
         'STRING', 'NEXT', 'SINGLE', "','", "XOR", "'&'", "'>'", "'.'",
+        'NOT', 'EACH', 'IN' , "'-'", "'*'", 'DIV', 'MID', 'DO', 'WHILE',
+        "'+'", 'LOOP',
     ]
 
     NO_SIDE_EFFECT_IDENTIFIER = [
@@ -38,11 +40,11 @@ class Cleaner(object):
         'ambiguousKeyword', 'type', 'baseType',
         'iCS_S_MembersCall', 'iCS_B_ProcedureCall', 'iCS_S_MemberCall',
         'iCS_B_MemberProcedureCall', 'certainIdentifier', 'argsCall',
-        'argCall',
+        'argCall', 'doLoopStmt',
     ]
 
     SIDE_EFFECT = [
-        'VARIANT', 'onErrorStmt',
+        'VARIANT', 'onErrorStmt', 'exitStmt', 'lineLabel', 'errorStmt',
     ]
 
     def __init__(self, known_var=[], known_functions={}, debug=False):
