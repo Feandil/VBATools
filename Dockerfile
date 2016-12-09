@@ -3,9 +3,9 @@ FROM gitlab-registry.cern.ch/linuxsupport/cc7-base
 MAINTAINER "CERN Computer Security Team <computer.security@cern.ch>"
 
 # Install dependencies
-RUN yum install -y java-1.8.0-openjdk-headless epel-release && \
+RUN yum install -y java-1.8.0-openjdk-headless epel-release python-requests && \
     yum install -y python-pip && \
-    pip install oletools && \
+    pip install oletools django djangorestframework imaplib2 kafka && \
     yum -y erase python-pip && \
     yum -y autoremove && \
     yum clean all
