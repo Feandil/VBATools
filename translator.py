@@ -888,6 +888,63 @@ class Translator(object):
             self.debug("ifThenElseStmt, can't handle {0}".format(child['name']))
             self._failed = True
 
+    @block_only
+    def _handle_forNextStmt(self, node, ret=False, left=False):
+        if len(node['children']) == 0:
+            self._failed = True
+            return
+        var = set()
+        type = None
+        values = []
+        blocks = []
+        for child in node['children']:
+            if child['name'] in ['FOR', 'WS', "'='", 'TO', 'STEP', 'NEXT', 'endOfStatement']:
+                pass
+            elif child['name'] == 'ambiguousIdentifier':
+                var.add(self._handle(child, ret=True, left=True))
+            elif child['name'] == 'valueStmt':
+                values.append(self._handle(child, ret=True))
+            elif child['name'] == 'block':
+                blocks.append(child)
+            elif child['name'] == 'asTypeClause':
+                type = self._handle(child, ret=True)
+            else:
+                self.debug("forNextStmt, can't handle {0}".format(child['name']))
+                self._failed = True
+        if len(var) != 1:
+            self.debug('forNextStmt, error in the loop variable: {0}'.format(var))
+            self._failed = True
+        var = list(var)[0]
+        if len(values) == 2:
+            (start, end) = values
+            step = '1'
+        elif len(values) == 3:
+            (start, end, step) = values
+        else:
+            self.debug('forNextStmt, wrong number of values: {0}'.format(len(values)))
+            self._failed = True
+        if self._failed:
+            return
+        if not type:
+            type = '{0}'
+        self._add_line('{0} = {1}'.format(var, type.format(start)))
+        self._add_line('{0}__end = {1}'.format(var, type.format(end)))
+        self._add_line('{0}__step = {1}'.format(var, type.format(step)))
+        self._add_line('while True:')
+        with self:
+            self._add_line('if ({0}__step > 0 and {0} > {0}__end) or ({0}__step < 0 and {0} < {0}__end):'.format(var))
+            with self:
+                self._add_line('break')
+            for block in blocks:
+                self._handle(block)
+            self._add_line('if {0}__step > 0:'.format(var))
+            with self:
+                self._add_line('{0} = {1}'.format(var, type.format('{0} + {0}__step'.format(var))))
+            self._add_line('else:')
+            with self:
+                self._add_line('{0} = {1}'.format(var, type.format('{0} - {0}__step'.format(var))))
+
+
     def parsed(self):
         return not self._failed
 
