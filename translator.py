@@ -41,6 +41,7 @@ FUN_REPLACEMENTS = {
     "Left": [(2, '{0}[:{1}]')],
     "Right": [(2, '{0}[-{1}:]')],
     "Sgn": [(1, '(lambda x: (0 if x == 0 else (1 if x > 0 else -1)))({0})')],
+    "Split": [(2, 'str({0}).split(str({1}))')],
 }
 
 KEYWORDS_OK = ['Err', 'Source', 'Number', 'Description', 'Raise', 'Application', 'CleanString', 'Module0', 'Module1', 'Module2', 'Module3', 'vbLowerCase', 'vbUpperCase']
