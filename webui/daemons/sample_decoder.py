@@ -34,6 +34,7 @@ class SampleDecoder(object):
         deob.clean_whitespaces()
         deob.clean_newlines()
         deob.clean_ids()
+        deob.clean_functions()
         decoded = deob.get_text()
         hashes = hash(decoded)
         with transaction.atomic():
