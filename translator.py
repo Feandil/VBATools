@@ -66,6 +66,8 @@ def return_or_block(func):
         if self._failed:
             if 'raw' in kwargs and kwargs['raw']:
                 return (None, None)
+            if 'formatted' in kwargs and not kwargs['formatted']:
+                return []
             return
         if 'ret' in kwargs and kwargs['ret']:
             return val
@@ -577,9 +579,9 @@ class Translator(object):
         if re.match("'Module[0-9]*'", name):
             if member.endswith('()'):
                 member = member.rstrip('()')
-            return self.__handle_procedure_call(member, arguments.split(', '))
+            return self.__handle_procedure_call(member, arguments)
         if arguments:
-            return "method_call({0}, {1}, [{2}])".format(name, member, arguments)
+            return "method_call({0}, {1}, [{2}])".format(name, member, ', '.join(arguments))
         else:
             return "method_call({0}, {1}, [])".format(name, member)
 
@@ -587,7 +589,7 @@ class Translator(object):
     def _handle_iCS_S_MembersCall(self, node, ret=False, left=False):
         name = None
         member = None
-        arguments = None
+        arguments = []
         for child in node['children']:
             if child['name'] in ['iCS_S_VariableOrProcedureCall', 'iCS_S_ProcedureOrArrayCall']:
                 if name:
@@ -629,10 +631,10 @@ class Translator(object):
             elif child['name'] == 'ambiguousIdentifier':
                 member = self._handle(child, ret=True, left=left)
             elif child['name'] in ['subscripts', 'argsCall']:
-                arguments.append(self._handle(child, ret=True, formatted=False))
+                arguments.extend(self._handle(child, ret=True, formatted=False))
         if self._failed:
             return (None, None)
-        return self.__handle_membercall(name, member, ', '.join(arguments))
+        return self.__handle_membercall(name, member, arguments)
 
     @block_only
     def _handle_whileWendStmt(self, node, ret=False, left=False):
